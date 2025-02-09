@@ -10,6 +10,7 @@ type ImageGenerations struct {
 	NegativePrompt    string  `json:"negative_prompt,omitempty"`
 	BatchSize         int     `json:"batch_size,omitempty"`
 	GuidanceScale     float64 `json:"guidance_scale,omitempty"`
+	PromptEnhancement bool	  `json:"prompt_enhancement,omitempty"`
 }
 
 type ImageRes struct {

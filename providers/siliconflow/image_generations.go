@@ -64,7 +64,10 @@ func convertFromIamgeOpenai(request *types.ImageRequest) *ImageGenerations {
 	return &ImageGenerations{
 		Prompt:            request.Prompt,
 		ImageSize:         request.Size,
-		NumInferenceSteps: 50,
+		NumInferenceSteps: request.NumInferenceSteps,
 		BatchSize:         request.N,
+		NegativePrompt:	   request.NegativePrompt,
+		GuidanceScale:	   request.GuidanceScale,
+		PromptEnhancement: request.PromptEnhancement,
 	}
 }
