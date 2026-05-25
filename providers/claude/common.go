@@ -4,6 +4,7 @@ import (
 	"one-api/common"
 	"one-api/types"
 	"strconv"
+	"strings"
 )
 
 func StringErrorWrapper(err string, code string, statusCode int, localError bool) *ClaudeErrorWithStatusCode {
@@ -64,6 +65,15 @@ func ErrorToClaudeErr(err error) *ClaudeError {
 	}
 }
 
+func ClaudeUsageMerge(usage *Usage, mergeUsage *Usage) {
+	if usage.InputTokens != mergeUsage.InputTokens {
+		usage.InputTokens += mergeUsage.InputTokens
+	}
+	usage.OutputTokens += mergeUsage.OutputTokens
+	usage.CacheCreationInputTokens += mergeUsage.CacheCreationInputTokens
+	usage.CacheReadInputTokens += mergeUsage.CacheReadInputTokens
+}
+
 func ClaudeUsageToOpenaiUsage(cUsage *Usage, usage *types.Usage) bool {
 	if usage == nil || cUsage == nil {
 		return false
@@ -76,6 +86,7 @@ func ClaudeUsageToOpenaiUsage(cUsage *Usage, usage *types.Usage) bool {
 	usage.PromptTokensDetails.CachedWriteTokens = cUsage.CacheCreationInputTokens
 	usage.PromptTokensDetails.CachedReadTokens = cUsage.CacheReadInputTokens
 
+	usage.PromptTokens = cUsage.InputTokens + cUsage.CacheCreationInputTokens + cUsage.CacheReadInputTokens
 	usage.CompletionTokens = cUsage.OutputTokens
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 
@@ -83,12 +94,13 @@ func ClaudeUsageToOpenaiUsage(cUsage *Usage, usage *types.Usage) bool {
 }
 
 func ClaudeOutputUsage(response *ClaudeResponse) int {
-	text := ""
+	var textMsg strings.Builder
+
 	for _, c := range response.Content {
 		if c.Type == "text" {
-			text += c.Text
+			textMsg.WriteString(c.Text + "\n")
 		}
 	}
 
-	return common.CountTokenText(text, response.Model)
+	return common.CountTokenText(textMsg.String(), response.Model)
 }

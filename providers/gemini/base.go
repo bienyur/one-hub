@@ -63,9 +63,10 @@ type GeminiProvider struct {
 
 func getConfig(version string) base.ProviderConfig {
 	return base.ProviderConfig{
-		BaseURL:         "https://generativelanguage.googleapis.com",
-		ChatCompletions: fmt.Sprintf("/%s/chat/completions", version),
-		ModelList:       "/models",
+		BaseURL:           "https://generativelanguage.googleapis.com",
+		ChatCompletions:   fmt.Sprintf("/%s/chat/completions", version),
+		ModelList:         "/models",
+		ImagesGenerations: "1",
 	}
 }
 
@@ -119,8 +120,14 @@ func cleaningError(errorInfo *GeminiError, key string) {
 func (p *GeminiProvider) GetFullRequestURL(requestURL string, modelName string) string {
 	baseURL := strings.TrimSuffix(p.GetBaseURL(), "/")
 	version := "v1beta"
+
 	if p.Channel.Other != "" {
 		version = p.Channel.Other
+	}
+
+	inputVersion := p.Context.Param("version")
+	if inputVersion != "" {
+		version = inputVersion
 	}
 
 	return fmt.Sprintf("%s/%s/models/%s:%s", baseURL, version, modelName, requestURL)

@@ -18,6 +18,14 @@ type baiduStreamHandler struct {
 }
 
 func (p *BaiduProvider) CreateChatCompletion(request *types.ChatCompletionRequest) (*types.ChatCompletionResponse, *types.OpenAIErrorWithStatusCode) {
+
+	if p.UseOpenaiAPI {
+		if modelNameConvert, ok := modelNameMap[request.Model]; ok {
+			request.Model = modelNameConvert
+		}
+		return p.OpenAIProvider.CreateChatCompletion(request)
+	}
+
 	req, errWithCode := p.getBaiduChatRequest(request)
 	if errWithCode != nil {
 		return nil, errWithCode
@@ -35,6 +43,14 @@ func (p *BaiduProvider) CreateChatCompletion(request *types.ChatCompletionReques
 }
 
 func (p *BaiduProvider) CreateChatCompletionStream(request *types.ChatCompletionRequest) (requester.StreamReaderInterface[string], *types.OpenAIErrorWithStatusCode) {
+
+	if p.UseOpenaiAPI {
+		if modelNameConvert, ok := modelNameMap[request.Model]; ok {
+			request.Model = modelNameConvert
+		}
+		return p.OpenAIProvider.CreateChatCompletionStream(request)
+	}
+
 	req, errWithCode := p.getBaiduChatRequest(request)
 	if errWithCode != nil {
 		return nil, errWithCode
@@ -133,7 +149,6 @@ func (p *BaiduProvider) convertToChatOpenai(response *BaiduChatResponse, request
 }
 
 func convertFromChatOpenai(request *types.ChatCompletionRequest) *BaiduChatRequest {
-	request.ClearEmptyMessages()
 	baiduChatRequest := &BaiduChatRequest{
 		Messages:    make([]BaiduMessage, 0, len(request.Messages)),
 		Temperature: request.Temperature,

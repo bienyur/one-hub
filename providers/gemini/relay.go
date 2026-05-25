@@ -3,25 +3,25 @@ package gemini
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"one-api/common"
 	"one-api/common/requester"
 	"one-api/types"
 	"strings"
 )
 
 type GeminiRelayStreamHandler struct {
-	Usage          *types.Usage
-	LastCandidates int
-	LastType       string
-	Prefix         string
-	ModelName      string
+	Usage     *types.Usage
+	Prefix    string
+	ModelName string
 
 	key string
 }
 
-func (p *GeminiProvider) CreateGeminiChat(request *GeminiChatRequest) (*GeminiChatResponse, *GeminiErrorWithStatusCode) {
-	req, errWithCode := p.getChatRequest(request)
+func (p *GeminiProvider) CreateGeminiChat(request *GeminiChatRequest) (*GeminiChatResponse, *types.OpenAIErrorWithStatusCode) {
+	req, errWithCode := p.getChatRequest(request, true)
 	if errWithCode != nil {
-		return nil, OpenaiErrToGeminiErr(errWithCode)
+		return nil, errWithCode
 	}
 	defer req.Body.Close()
 
@@ -29,30 +29,32 @@ func (p *GeminiProvider) CreateGeminiChat(request *GeminiChatRequest) (*GeminiCh
 	// 发送请求
 	_, errWithCode = p.Requester.SendRequest(req, geminiResponse, false)
 	if errWithCode != nil {
-		return nil, OpenaiErrToGeminiErr(errWithCode)
+		return nil, errWithCode
+	}
+
+	if len(geminiResponse.Candidates) == 0 {
+		return nil, common.StringErrorWrapper("no candidates", "no_candidates", http.StatusInternalServerError)
 	}
 
 	usage := p.GetUsage()
-	*usage = convertOpenAIUsage(request.Model, geminiResponse.UsageMetadata)
+	*usage = ConvertOpenAIUsage(geminiResponse.UsageMetadata)
 
 	return geminiResponse, nil
 }
 
-func (p *GeminiProvider) CreateGeminiChatStream(request *GeminiChatRequest) (requester.StreamReaderInterface[string], *GeminiErrorWithStatusCode) {
-	req, errWithCode := p.getChatRequest(request)
+func (p *GeminiProvider) CreateGeminiChatStream(request *GeminiChatRequest) (requester.StreamReaderInterface[string], *types.OpenAIErrorWithStatusCode) {
+	req, errWithCode := p.getChatRequest(request, true)
 	if errWithCode != nil {
-		return nil, OpenaiErrToGeminiErr(errWithCode)
+		return nil, errWithCode
 	}
 	defer req.Body.Close()
 
 	channel := p.GetChannel()
 
 	chatHandler := &GeminiRelayStreamHandler{
-		Usage:          p.Usage,
-		ModelName:      request.Model,
-		Prefix:         `data: `,
-		LastCandidates: 0,
-		LastType:       "",
+		Usage:     p.Usage,
+		ModelName: request.Model,
+		Prefix:    `data: `,
 
 		key: channel.Key,
 	}
@@ -60,12 +62,12 @@ func (p *GeminiProvider) CreateGeminiChatStream(request *GeminiChatRequest) (req
 	// 发送请求
 	resp, errWithCode := p.Requester.SendRequestRaw(req)
 	if errWithCode != nil {
-		return nil, OpenaiErrToGeminiErr(errWithCode)
+		return nil, errWithCode
 	}
 
 	stream, errWithCode := requester.RequestNoTrimStream(p.Requester, resp, chatHandler.HandlerStream)
 	if errWithCode != nil {
-		return nil, OpenaiErrToGeminiErr(errWithCode)
+		return nil, errWithCode
 	}
 
 	return stream, nil
@@ -94,27 +96,17 @@ func (h *GeminiRelayStreamHandler) HandlerStream(rawLine *[]byte, dataChan chan 
 		errChan <- geminiResponse.ErrorInfo
 		return
 	}
+	h.Usage.TextBuilder.WriteString(geminiResponse.GetResponseText())
 
-	if geminiResponse.UsageMetadata == nil || geminiResponse.Candidates[0].Content.Parts[0].CodeExecutionResult != nil {
+	if geminiResponse.UsageMetadata == nil {
 		dataChan <- rawStr
 		return
 	}
 
-	lastType := "text"
-	if geminiResponse.Candidates[0].Content.Parts[0].ExecutableCode != nil {
-		lastType = "code"
-	}
-	if h.LastType != lastType {
-		h.LastCandidates = 0
-		h.LastType = lastType
-	}
+	usage := ConvertOpenAIUsage(geminiResponse.UsageMetadata)
 
-	adjustTokenCounts(h.ModelName, geminiResponse.UsageMetadata)
-
-	h.Usage.PromptTokens = geminiResponse.UsageMetadata.PromptTokenCount
-	h.Usage.CompletionTokens += geminiResponse.UsageMetadata.CandidatesTokenCount - h.LastCandidates
-	h.Usage.TotalTokens = h.Usage.PromptTokens + h.Usage.CompletionTokens
-	h.LastCandidates = geminiResponse.UsageMetadata.CandidatesTokenCount
+	usage.TextBuilder = h.Usage.TextBuilder
+	*h.Usage = usage
 
 	dataChan <- rawStr
 }

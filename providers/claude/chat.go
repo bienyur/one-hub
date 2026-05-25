@@ -31,6 +31,7 @@ type ClaudeStreamHandler struct {
 }
 
 func (p *ClaudeProvider) CreateChatCompletion(request *types.ChatCompletionRequest) (*types.ChatCompletionResponse, *types.OpenAIErrorWithStatusCode) {
+	request.OneOtherArg = p.GetOtherArg()
 	claudeRequest, errWithCode := ConvertFromChatOpenai(request)
 	if errWithCode != nil {
 		return nil, errWithCode
@@ -53,6 +54,7 @@ func (p *ClaudeProvider) CreateChatCompletion(request *types.ChatCompletionReque
 }
 
 func (p *ClaudeProvider) CreateChatCompletionStream(request *types.ChatCompletionRequest) (requester.StreamReaderInterface[string], *types.OpenAIErrorWithStatusCode) {
+	request.OneOtherArg = p.GetOtherArg()
 	claudeRequest, errWithCode := ConvertFromChatOpenai(request)
 	if errWithCode != nil {
 		return nil, errWithCode
@@ -102,6 +104,10 @@ func (p *ClaudeProvider) getChatRequest(claudeRequest *ClaudeRequest) (*http.Req
 		headers["anthropic-beta"] = "max-tokens-3-5-sonnet-2024-07-15"
 	}
 
+	if strings.HasPrefix(claudeRequest.Model, "claude-3-7-sonnet") {
+		headers["anthropic-beta"] = "output-128k-2025-02-19"
+	}
+
 	// 创建请求
 	req, err := p.Requester.NewRequest(http.MethodPost, fullRequestURL, p.Requester.WithBody(claudeRequest), p.Requester.WithHeader(headers))
 	if err != nil {
@@ -112,24 +118,54 @@ func (p *ClaudeProvider) getChatRequest(claudeRequest *ClaudeRequest) (*http.Req
 }
 
 func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*ClaudeRequest, *types.OpenAIErrorWithStatusCode) {
-	request.ClearEmptyMessages()
 	claudeRequest := ClaudeRequest{
 		Model:         request.Model,
 		Messages:      make([]Message, 0),
-		System:        "",
-		MaxTokens:     defaultMaxTokens(request.MaxTokens),
+		MaxTokens:     request.MaxTokens,
 		StopSequences: nil,
 		Temperature:   request.Temperature,
 		TopP:          request.TopP,
 		Stream:        request.Stream,
 	}
 
-	var prevUserMessage bool
-	systemMessage := ""
+	if request.Stop != nil {
+		stopBytes, err := json.Marshal(request.Stop)
+		if err == nil {
+			var stopSequences []string
+			if err := json.Unmarshal(stopBytes, &stopSequences); err == nil {
+				claudeRequest.StopSequences = stopSequences
+			} else if stop, ok := request.Stop.(string); ok {
+				claudeRequest.StopSequences = []string{stop}
+			}
+		}
+	}
 
-	for _, msg := range request.Messages {
-		if msg.Role == "system" {
-			systemMessage += msg.StringContent()
+	// 处理 system 字段（支持 cache_control）
+	systemMessage := ""
+	mgsLen := len(request.Messages) - 1
+	isThink := (request.OneOtherArg == "thinking" || request.Reasoning != nil)
+
+	// 如果请求中已经有 system 字段（如数组格式带 cache_control），直接使用
+	if request.System != nil {
+		// 检查是否为空字符串，避免传递空 system 字段
+		if str, ok := request.System.(string); ok && str == "" {
+			// 空字符串不设置，保持为 nil
+		} else {
+			claudeRequest.System = request.System
+		}
+	}
+
+	// 处理 messages
+	for index, msg := range request.Messages {
+		if isThink && index == mgsLen && (msg.Role == types.ChatMessageRoleAssistant || msg.Role == types.ChatMessageRoleSystem) {
+			msg.Role = types.ChatMessageRoleUser
+		}
+
+		if msg.Role == types.ChatMessageRoleSystem {
+			// 如果没有预设的 system 字段，从 messages 中提取
+			if request.System == nil {
+				systemMessage += msg.StringContent()
+			}
 			continue
 		}
 		messageContent, err := convertMessageContent(&msg)
@@ -137,26 +173,12 @@ func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*ClaudeRequest
 			return nil, common.ErrorWrapper(err, "conversion_error", http.StatusBadRequest)
 		}
 		if messageContent != nil {
-			if messageContent.Role == "user" && prevUserMessage {
-				assistantMessage := Message{
-					Role: "assistant",
-					Content: []MessageContent{
-						{
-							Type: "text",
-							Text: "ok",
-						},
-					},
-				}
-				claudeRequest.Messages = append(claudeRequest.Messages, assistantMessage)
-				prevUserMessage = false
-			} else {
-				prevUserMessage = messageContent.Role == "user"
-			}
 			claudeRequest.Messages = append(claudeRequest.Messages, *messageContent)
 		}
 	}
 
-	if systemMessage != "" {
+	// 如果没有预设的 system 字段，且从 messages 中提取到了 system message
+	if request.System == nil && systemMessage != "" {
 		claudeRequest.System = systemMessage
 	}
 
@@ -174,7 +196,65 @@ func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*ClaudeRequest
 		claudeRequest.ToolChoice = ConvertToolChoice(toolType, toolFunc)
 	}
 
+	if claudeRequest.MaxTokens == 0 {
+		claudeRequest.MaxTokens = config.ClaudeSettingsInstance.GetDefaultMaxTokens(request.Model)
+	}
+
+	// 如果是3-7 默认开启thinking
+	if request.OneOtherArg == "thinking" || request.Reasoning != nil {
+		var opErr *types.OpenAIErrorWithStatusCode
+		claudeRequest.MaxTokens, claudeRequest.Thinking, opErr = getThinking(claudeRequest.MaxTokens, request.Reasoning)
+
+		if opErr != nil {
+			return nil, opErr
+		}
+
+		claudeRequest.TopP = nil
+	}
+
 	return &claudeRequest, nil
+}
+
+func getThinking(maxTokens int, reasoning *types.ChatReasoning) (newMaxtokens int, thinking *Thinking, err *types.OpenAIErrorWithStatusCode) {
+	newMaxtokens = maxTokens
+	thinking = &Thinking{
+		Type: "enabled",
+	}
+
+	if reasoning == nil || (reasoning.MaxTokens == 0 && reasoning.Effort == "") {
+		thinking.BudgetTokens = int(float64(maxTokens) * config.ClaudeSettingsInstance.BudgetTokensPercentage)
+	} else if reasoning.MaxTokens > 0 {
+		if reasoning.MaxTokens < 1024 {
+			err = common.StringErrorWrapper("budget_token must be greater than 1024", "budget_tokens_too_small", http.StatusBadRequest)
+			return
+		}
+
+		if reasoning.MaxTokens > maxTokens {
+			err = common.StringErrorWrapper(fmt.Sprintf("budget_token cannot be greater than the max_token, max_token: %d, budget_token: %d", maxTokens, reasoning.MaxTokens), "budget_tokens_too_large", http.StatusBadRequest)
+			return
+		}
+		thinking.BudgetTokens = reasoning.MaxTokens
+	} else {
+		switch reasoning.Effort {
+		case "low":
+			thinking.BudgetTokens = int(float64(maxTokens) * 0.2)
+		case "medium":
+			thinking.BudgetTokens = int(float64(maxTokens) * 0.5)
+		default:
+			thinking.BudgetTokens = int(float64(maxTokens) * 0.8)
+		}
+	}
+
+	// 如果低于1024,则设置为1024
+	if thinking.BudgetTokens < 1024 {
+		thinking.BudgetTokens = 1024
+	}
+
+	if newMaxtokens <= thinking.BudgetTokens {
+		newMaxtokens = 1280
+	}
+
+	return
 }
 
 func ConvertToolChoice(toolType, toolFunc string) *ToolChoice {
@@ -189,13 +269,6 @@ func ConvertToolChoice(toolType, toolFunc string) *ToolChoice {
 	}
 
 	return choice
-}
-
-func defaultMaxTokens(maxTokens int) int {
-	if maxTokens == 0 {
-		return 4096
-	}
-	return maxTokens
 }
 
 func convertMessageContent(msg *types.ChatCompletionMessage) (*Message, error) {
@@ -237,10 +310,15 @@ func convertMessageContent(msg *types.ChatCompletionMessage) (*Message, error) {
 	openaiContent := msg.ParseContent()
 	for _, part := range openaiContent {
 		if part.Type == types.ContentTypeText {
-			content = append(content, MessageContent{
+			msgContent := MessageContent{
 				Type: "text",
 				Text: part.Text,
-			})
+			}
+			// 传递 cache_control 字段
+			if msg.CacheControl != nil {
+				msgContent.CacheControl = msg.CacheControl
+			}
+			content = append(content, msgContent)
 			continue
 		}
 		if part.Type == types.ContentTypeImageURL {
@@ -248,8 +326,13 @@ func convertMessageContent(msg *types.ChatCompletionMessage) (*Message, error) {
 			if err != nil {
 				return nil, common.ErrorWrapper(err, "image_url_invalid", http.StatusBadRequest)
 			}
+			claudeType := "image"
+
+			if mimeType == "application/pdf" {
+				claudeType = "document"
+			}
 			content = append(content, MessageContent{
-				Type: "image",
+				Type: claudeType,
 				Source: &ContentSource{
 					Type:      "base64",
 					MediaType: mimeType,
@@ -274,34 +357,75 @@ func ConvertToChatOpenai(provider base.ProviderInterface, response *ClaudeRespon
 		return
 	}
 
-	responseText := ""
-	if len(response.Content) > 0 {
-		responseText = response.Content[0].Text
-	}
+	choices := make([]types.ChatCompletionChoice, 0)
+	isThinking := false
+	thinkingContent := ""
 
-	choice := types.ChatCompletionChoice{
-		Index: 0,
-		Message: types.ChatCompletionMessage{
-			Role:    response.Role,
-			Content: responseText,
-		},
-		FinishReason: stopReasonClaude2OpenAI(response.StopReason),
-	}
-
-	if response.StopReason == FinishReasonToolUse {
-		for _, content := range response.Content {
-			if content.Type == FinishReasonToolUse {
-				choice.Message.ToolCalls = []*types.ChatCompletionToolCalls{content.ToOpenAITool()}
+	for _, content := range response.Content {
+		switch content.Type {
+		case ContentTypeToolUes:
+			if len(choices) == 0 {
+				choice := types.ChatCompletionChoice{
+					Index: 0,
+					Message: types.ChatCompletionMessage{
+						Role:    response.Role,
+						Content: "",
+					},
+				}
+				choices = append(choices, choice)
 			}
+
+			index := len(choices) - 1
+			lastChoice := choices[index]
+
+			if lastChoice.Message.ToolCalls == nil {
+				lastChoice.Message.ToolCalls = make([]*types.ChatCompletionToolCalls, 0)
+			}
+			lastChoice.Message.ToolCalls = append(lastChoice.Message.ToolCalls, content.ToOpenAITool())
+			lastChoice.FinishReason = types.FinishReasonToolCalls
+			choices[index] = lastChoice
+		case ContentTypeThinking, ContentTypeRedactedThinking:
+			if content.Type == ContentTypeRedactedThinking {
+				continue
+			}
+			isThinking = true
+			thinkingContent = content.Thinking
+		default:
+			choice := types.ChatCompletionChoice{
+				Index: 0,
+				Message: types.ChatCompletionMessage{
+					Role:    response.Role,
+					Content: content.Text,
+				},
+				FinishReason: stopReasonClaude2OpenAI(response.StopReason),
+			}
+
+			if isThinking {
+				choice.Message.ReasoningContent = thinkingContent
+			}
+
+			choices = append(choices, choice)
 		}
-		choice.FinishReason = types.FinishReasonToolCalls
+
+	}
+
+	if len(choices) == 0 {
+		// 如果没有内容，则返回一个空的响应
+		choices = append(choices, types.ChatCompletionChoice{
+			Index: 0,
+			Message: types.ChatCompletionMessage{
+				Role:    response.Role,
+				Content: "",
+			},
+			FinishReason: stopReasonClaude2OpenAI(response.StopReason),
+		})
 	}
 
 	openaiResponse = &types.ChatCompletionResponse{
 		ID:      response.Id,
 		Object:  "chat.completion",
 		Created: utils.GetTimestamp(),
-		Choices: []types.ChatCompletionChoice{choice},
+		Choices: choices,
 		Model:   request.Model,
 		Usage: &types.Usage{
 			CompletionTokens: 0,
@@ -309,14 +433,6 @@ func ConvertToChatOpenai(provider base.ProviderInterface, response *ClaudeRespon
 			TotalTokens:      0,
 		},
 	}
-
-	completionTokens := response.Usage.OutputTokens
-
-	promptTokens := response.Usage.InputTokens
-
-	openaiResponse.Usage.PromptTokens = promptTokens
-	openaiResponse.Usage.CompletionTokens = completionTokens
-	openaiResponse.Usage.TotalTokens = promptTokens + completionTokens
 
 	usage := provider.GetUsage()
 	isOk := ClaudeUsageToOpenaiUsage(&response.Usage, usage)
@@ -374,9 +490,7 @@ func (h *ClaudeStreamHandler) HandlerStream(rawLine *[]byte, dataChan chan strin
 
 	case "content_block_delta":
 		h.convertToOpenaiStream(&claudeResponse, dataChan)
-		h.Usage.CompletionTokens += common.CountTokenText(claudeResponse.Delta.Text, h.Request.Model)
-		h.Usage.TotalTokens = h.Usage.PromptTokens + h.Usage.CompletionTokens
-
+		h.Usage.TextBuilder.WriteString(claudeResponse.Delta.Text)
 	case "content_block_start":
 		h.convertToOpenaiStream(&claudeResponse, dataChan)
 
@@ -412,7 +526,8 @@ func (h *ClaudeStreamHandler) convertToOpenaiStream(claudeResponse *ClaudeStream
 		h.StreamTolls = StreamTollsUse
 	}
 
-	if claudeResponse.Delta.Type == "input_json_delta" {
+	switch claudeResponse.Delta.Type {
+	case ContentStreamTypeInputJsonDelta:
 		if claudeResponse.Delta.PartialJson == "" {
 			return
 		}
@@ -423,6 +538,11 @@ func (h *ClaudeStreamHandler) convertToOpenaiStream(claudeResponse *ClaudeStream
 			},
 		})
 		h.StreamTolls = StreamTollsArg
+	case ContentStreamTypeSignatureDelta:
+		// 加密的不处理
+		choice.Delta.ReasoningContent = "\n"
+	case ContentStreamTypeThinking:
+		choice.Delta.ReasoningContent = claudeResponse.Delta.Thinking
 	}
 
 	if claudeResponse.ContentBlock.Type != ContentTypeToolUes && claudeResponse.Delta.Type != "input_json_delta" && h.StreamTolls != StreamTollsNone {

@@ -9,33 +9,75 @@ import (
 	"one-api/common/requester"
 	"one-api/model"
 	"one-api/providers/base"
+	"one-api/providers/openai"
 	"one-api/types"
+)
+
+const (
+	OpenaiBaseURL = "https://dashscope.aliyuncs.com/compatible-mode"
+	AliBaseURL    = "https://dashscope.aliyuncs.com"
 )
 
 // 定义供应商工厂
 type AliProviderFactory struct{}
 
 type AliProvider struct {
-	base.BaseProvider
+	openai.OpenAIProvider
+
+	UseOpenaiAPI bool
 }
 
 // 创建 AliProvider
 // https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
 func (f AliProviderFactory) Create(channel *model.Channel) base.ProviderInterface {
-	return &AliProvider{
-		BaseProvider: base.BaseProvider{
-			Config:    getConfig(),
-			Channel:   channel,
-			Requester: requester.NewHTTPRequester(*channel.Proxy, requestErrorHandle),
-		},
+	useOpenaiAPI := false
+
+	if channel.Plugin != nil {
+		plugin := channel.Plugin.Data()
+		if pOpenAI, ok := plugin["use_openai_api"]; ok {
+			if enable, ok := pOpenAI["enable"].(bool); ok && enable {
+				useOpenaiAPI = true
+			}
+		}
 	}
+
+	provider := &AliProvider{
+		OpenAIProvider: openai.OpenAIProvider{
+			BaseProvider: base.BaseProvider{
+				Config:  getConfig(useOpenaiAPI),
+				Channel: channel,
+				// Requester: requester.NewHTTPRequester(*channel.Proxy, requestErrorHandle),
+			},
+			StreamEscapeJSON:     true,
+			SupportStreamOptions: true,
+		},
+		UseOpenaiAPI: useOpenaiAPI,
+	}
+
+	if useOpenaiAPI {
+		provider.Requester = requester.NewHTTPRequester(*channel.Proxy, openai.RequestErrorHandle)
+	} else {
+		provider.Requester = requester.NewHTTPRequester(*channel.Proxy, requestErrorHandle)
+	}
+
+	return provider
 }
 
-func getConfig() base.ProviderConfig {
+func getConfig(useOpenaiAPI bool) base.ProviderConfig {
+	if useOpenaiAPI {
+		return base.ProviderConfig{
+			BaseURL:         OpenaiBaseURL,
+			ChatCompletions: "/v1/chat/completions",
+			Embeddings:      "/v1/embeddings",
+			ModelList:       "/v1/models",
+		}
+	}
+
 	return base.ProviderConfig{
-		BaseURL:         "https://dashscope.aliyuncs.com",
+		BaseURL:         AliBaseURL,
 		ChatCompletions: "/api/v1/services/aigc/text-generation/generation",
 		Embeddings:      "/api/v1/services/embeddings/text-embedding/text-embedding",
+		ModelList:       "/v1/models",
 	}
 }
 
@@ -66,8 +108,12 @@ func errorHandle(aliError *AliError) *types.OpenAIError {
 func (p *AliProvider) GetFullRequestURL(requestURL string, modelName string) string {
 	baseURL := strings.TrimSuffix(p.GetBaseURL(), "/")
 
-	if strings.HasPrefix(modelName, "qwen-vl") {
-		requestURL = "/api/v1/services/aigc/multimodal-generation/generation"
+	modelKeywords := strings.Split(VisionModelKeywords, ",")
+	for _, keyword := range modelKeywords {
+		if strings.Contains(modelName, keyword) {
+			requestURL = "/api/v1/services/aigc/multimodal-generation/generation"
+			break
+		}
 	}
 
 	return fmt.Sprintf("%s%s", baseURL, requestURL)

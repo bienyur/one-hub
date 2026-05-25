@@ -102,7 +102,7 @@ export default function Overview() {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <Button variant="contained" onClick={handleSearch} fullWidth>
+              <Button variant="contained" style={{ height: '100%' }} onClick={handleSearch} fullWidth>
                 搜索
               </Button>
             </Grid>

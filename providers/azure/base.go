@@ -15,9 +15,10 @@ func (f AzureProviderFactory) Create(channel *model.Channel) base.ProviderInterf
 	return &AzureProvider{
 		OpenAIProvider: openai.OpenAIProvider{
 			BaseProvider: base.BaseProvider{
-				Config:    config,
-				Channel:   channel,
-				Requester: requester.NewHTTPRequester(*channel.Proxy, openai.RequestErrorHandle),
+				Config:          config,
+				Channel:         channel,
+				Requester:       requester.NewHTTPRequester(*channel.Proxy, openai.RequestErrorHandle),
+				SupportResponse: true,
 			},
 			IsAzure:              true,
 			BalanceAction:        false,
@@ -36,7 +37,11 @@ func getAzureConfig() base.ProviderConfig {
 		AudioTranscriptions: "/audio/transcriptions",
 		AudioTranslations:   "/audio/translations",
 		ImagesGenerations:   "/images/generations",
+		ImagesEdit:          "/images/edits",
+		ImagesVariations:    "/images/variations", //azure dall-e-2 variations支持
 		ChatRealtime:        "/realtime",
+		ModelList:           "isGetAzureModelList", // 在azure中该参数不参与实际url拼接，只是起到flag的作用
+		Responses:           "/responses",
 	}
 }
 

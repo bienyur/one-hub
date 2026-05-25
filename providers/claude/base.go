@@ -32,6 +32,7 @@ func getConfig() base.ProviderConfig {
 	return base.ProviderConfig{
 		BaseURL:         "https://api.anthropic.com",
 		ChatCompletions: "/v1/messages",
+		ModelList:       "/v1/models",
 	}
 }
 
@@ -94,6 +95,8 @@ func stopReasonClaude2OpenAI(reason string) string {
 		return types.FinishReasonLength
 	case "tool_use":
 		return types.FinishReasonToolCalls
+	case "refusal":
+		return types.FinishReasonContentFilter
 	default:
 		return reason
 	}

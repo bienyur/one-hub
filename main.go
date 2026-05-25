@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"net/http"
 	"one-api/cli"
 	"one-api/common"
 	"one-api/common/cache"
@@ -12,14 +13,17 @@ import (
 	"one-api/common/oidc"
 	"one-api/common/redis"
 	"one-api/common/requester"
+	"one-api/common/search"
 	"one-api/common/storage"
 	"one-api/common/telegram"
+	"one-api/common/webauthn"
 	"one-api/controller"
 	"one-api/cron"
 	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay/task"
 	"one-api/router"
+	"one-api/safty"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -60,6 +64,8 @@ func main() {
 	model.InitOptionMap()
 	// Initialize oidc
 	oidc.InitOIDCConfig()
+	// Initialize wenauthn
+	webauthn.InitWebAuthn()
 	model.NewPricing()
 	model.HandleOldTokenMaxId()
 
@@ -76,7 +82,14 @@ func main() {
 	notify.InitNotifier()
 	cron.InitCron()
 	storage.InitStorage()
-
+	search.InitSearcher()
+	// 初始化安全检查器
+	safty.InitSaftyTools()
+	// 初始化账单数据
+	if config.UserInvoiceMonth {
+		logger.SysLog("Enable User Invoice Monthly Data")
+		go model.InsertStatisticsMonth()
+	}
 	initHttpServer()
 }
 
@@ -93,7 +106,7 @@ func initMemoryCache() {
 	model.TokenCacheSeconds = syncFrequency
 
 	logger.SysLog("memory cache enabled")
-	logger.SysError(fmt.Sprintf("sync frequency: %d seconds", syncFrequency))
+	logger.SysLog(fmt.Sprintf("sync frequency: %d seconds", syncFrequency))
 	go model.SyncOptions(syncFrequency)
 	go SyncChannelCache(syncFrequency)
 }
@@ -119,6 +132,13 @@ func initHttpServer() {
 	}
 
 	store := cookie.NewStore([]byte(config.SessionSecret))
+	store.Options(sessions.Options{
+		Path:     "/",
+		MaxAge:   2592000, // 30 days
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteStrictMode,
+	})
 	server.Use(sessions.Sessions("session", store))
 
 	router.SetRouter(server, buildFS, indexPage)
@@ -140,6 +160,7 @@ func SyncChannelCache(frequency int) {
 		time.Sleep(time.Duration(frequency) * time.Second)
 		logger.SysLog("syncing channels from database")
 		model.ChannelGroup.Load()
+		model.GlobalUserGroupRatio.Load()
 		model.PricingInstance.Init()
 		model.ModelOwnedBysInstance.Load()
 	}

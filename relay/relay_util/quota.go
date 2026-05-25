@@ -3,7 +3,6 @@ package relay_util
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
 	"net/http"
 	"one-api/common"
@@ -21,6 +20,8 @@ type Quota struct {
 	promptTokens     int
 	price            model.Price
 	groupName        string
+	isBackupGroup    bool // 新增字段记录是否使用备用分组
+	backupGroupName  string
 	groupRatio       float64
 	inputRatio       float64
 	outputRatio      float64
@@ -29,26 +30,37 @@ type Quota struct {
 	userId           int
 	channelId        int
 	tokenId          int
+	unlimitedQuota   bool
 	HandelStatus     bool
+
+	startTime         time.Time
+	firstResponseTime time.Time
+	extraBillingData  map[string]ExtraBillingData
 }
 
 func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
+	isBackupGroup := c.GetBool("is_backupGroup")
+
 	quota := &Quota{
-		modelName:    modelName,
-		promptTokens: promptTokens,
-		userId:       c.GetInt("id"),
-		channelId:    c.GetInt("channel_id"),
-		tokenId:      c.GetInt("token_id"),
-		HandelStatus: false,
+		modelName:      modelName,
+		promptTokens:   promptTokens,
+		userId:         c.GetInt("id"),
+		channelId:      c.GetInt("channel_id"),
+		tokenId:        c.GetInt("token_id"),
+		unlimitedQuota: c.GetBool("token_unlimited_quota"),
+		HandelStatus:   false,
+		isBackupGroup:  isBackupGroup, // 记录是否使用备用分组
 	}
 
 	quota.price = *model.PricingInstance.GetPrice(quota.modelName)
-	quota.groupRatio = c.GetFloat64("group_ratio")
 	quota.groupName = c.GetString("token_group")
+	quota.backupGroupName = c.GetString("token_backup_group")
+	quota.groupRatio = c.GetFloat64("group_ratio") // 这里的倍率已经在 common.go 中正确设置了
 	quota.inputRatio = quota.price.GetInput() * quota.groupRatio
 	quota.outputRatio = quota.price.GetOutput() * quota.groupRatio
 
 	return quota
+
 }
 
 func (q *Quota) PreQuotaConsumption() *types.OpenAIErrorWithStatusCode {
@@ -104,7 +116,7 @@ func (q *Quota) UpdateUserRealtimeQuota(usage *types.UsageEvent, nowUsage *types
 	}
 
 	promptTokens, completionTokens := q.getComputeTokensByUsageEvent(nowUsage)
-	increaseQuota := q.GetTotalQuota(promptTokens, completionTokens)
+	increaseQuota := q.GetTotalQuota(promptTokens, completionTokens, nil)
 
 	cacheQuota, err := model.CacheIncreaseUserRealtimeQuota(q.userId, increaseQuota)
 	if err != nil {
@@ -124,7 +136,7 @@ func (q *Quota) UpdateUserRealtimeQuota(usage *types.UsageEvent, nowUsage *types
 	return nil
 }
 
-func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, isStream bool, ctx context.Context) error {
+func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, isStream bool, sourceIp string, ctx context.Context) error {
 	defer func() {
 		if q.cacheQuota > 0 {
 			model.CacheDecreaseUserRealtimeQuota(q.userId, q.cacheQuota)
@@ -135,7 +147,7 @@ func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, 
 
 	if quota > 0 {
 		quotaDelta := quota - q.preConsumedQuota
-		err := model.PostConsumeTokenQuota(q.tokenId, quotaDelta)
+		err := model.PostConsumeTokenQuotaWithInfo(q.tokenId, q.userId, q.unlimitedQuota, quotaDelta)
 		if err != nil {
 			return errors.New("error consuming token remain quota: " + err.Error())
 		}
@@ -155,10 +167,11 @@ func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, 
 		q.modelName,
 		tokenName,
 		quota,
-		q.getLogContent(),
-		getRequestTime(ctx),
+		"",
+		q.getRequestTime(),
 		isStream,
 		q.GetLogMeta(usage),
+		sourceIp,
 	)
 	model.UpdateUserUsedQuotaAndRequestCount(q.userId, quota)
 
@@ -166,11 +179,10 @@ func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, 
 }
 
 func (q *Quota) Undo(c *gin.Context) {
-	tokenId := c.GetInt("token_id")
 	if q.HandelStatus {
 		go func(ctx context.Context) {
 			// return pre-consumed quota
-			err := model.PostConsumeTokenQuota(tokenId, -q.preConsumedQuota)
+			err := model.PostConsumeTokenQuotaWithInfo(q.tokenId, q.userId, q.unlimitedQuota, -q.preConsumedQuota)
 			if err != nil {
 				logger.LogError(ctx, "error return pre-consumed quota: "+err.Error())
 			}
@@ -180,9 +192,10 @@ func (q *Quota) Undo(c *gin.Context) {
 
 func (q *Quota) Consume(c *gin.Context, usage *types.Usage, isStream bool) {
 	tokenName := c.GetString("token_name")
+	q.startTime = c.GetTime("requestStartTime")
 	// 如果没有报错，则消费配额
 	go func(ctx context.Context) {
-		err := q.completedQuotaConsumption(usage, tokenName, isStream, ctx)
+		err := q.completedQuotaConsumption(usage, tokenName, isStream, c.ClientIP(), ctx)
 		if err != nil {
 			logger.LogError(ctx, err.Error())
 		}
@@ -195,86 +208,63 @@ func (q *Quota) GetInputRatio() float64 {
 
 func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 	meta := map[string]any{
-		"group_name":   q.groupName,
-		"price_type":   q.price.Type,
-		"group_ratio":  q.groupRatio,
-		"input_ratio":  q.price.GetInput(),
-		"output_ratio": q.price.GetOutput(),
+		"group_name":        q.groupName,
+		"backup_group_name": q.backupGroupName,
+		"is_backup_group":   q.isBackupGroup, // 添加是否使用备用分组的标识
+		"price_type":        q.price.Type,
+		"group_ratio":       q.groupRatio,
+		"input_ratio":       q.price.GetInput(),
+		"output_ratio":      q.price.GetOutput(),
+	}
+
+	firstResponseTime := q.GetFirstResponseTime()
+	if firstResponseTime > 0 {
+		meta["first_response"] = firstResponseTime
 	}
 
 	if usage != nil {
-		promptDetails := usage.PromptTokensDetails
-		completionDetails := usage.CompletionTokensDetails
+		extraTokens := usage.GetExtraTokens()
 
-		if promptDetails.CachedTokens != 0 {
-			meta["cached_tokens"] = promptDetails.CachedTokens
-			meta["cached_tokens_ratio"] = q.price.GetExtraRatio("cached_tokens_ratio")
+		for key, value := range extraTokens {
+			meta[key] = value
+			extraRatio := q.price.GetExtraRatio(key)
+			meta[key+"_ratio"] = extraRatio
 		}
-		if promptDetails.AudioTokens != 0 {
-			meta["input_audio_tokens"] = promptDetails.AudioTokens
-			meta["input_audio_tokens_ratio"] = q.price.GetExtraRatio("input_audio_tokens_ratio")
-		}
-		if promptDetails.TextTokens != 0 {
-			meta["input_text_tokens"] = promptDetails.TextTokens
-		}
+	}
 
-		if promptDetails.CachedWriteTokens > 0 {
-			meta["cached_write_tokens"] = promptDetails.CachedWriteTokens
-			meta["cached_write_ratio"] = q.price.GetExtraRatio("cached_write_ratio")
-		}
-
-		if promptDetails.CachedReadTokens > 0 {
-			meta["cached_read_tokens"] = promptDetails.CachedReadTokens
-			meta["cached_read_ratio"] = q.price.GetExtraRatio("cached_read_ratio")
-		}
-
-		if completionDetails.AudioTokens != 0 {
-			meta["output_audio_tokens"] = completionDetails.AudioTokens
-			meta["output_audio_tokens_ratio"] = q.price.GetExtraRatio("output_audio_tokens_ratio")
-		}
-		if completionDetails.TextTokens != 0 {
-			meta["output_text_tokens"] = completionDetails.TextTokens
-		}
+	if q.extraBillingData != nil {
+		meta["extra_billing"] = q.extraBillingData
 	}
 
 	return meta
 }
 
-func getRequestTime(ctx context.Context) int {
-	requestTime := 0
-	requestStartTimeValue := ctx.Value("requestStartTime")
-	if requestStartTimeValue != nil {
-		requestStartTime, ok := requestStartTimeValue.(time.Time)
-		if ok {
-			requestTime = int(time.Since(requestStartTime).Milliseconds())
-		}
-	}
-	return requestTime
-}
-
-func (q *Quota) getLogContent() string {
-	modelRatioStr := ""
-
-	if q.price.Type == model.TimesPriceType {
-		modelRatioStr = fmt.Sprintf("$%s/次", q.price.FetchInputCurrencyPrice(model.DollarRate))
-	} else {
-		// 如果输入费率和输出费率一样，则只显示一个费率
-		if q.price.GetInput() == q.price.GetOutput() {
-			modelRatioStr = fmt.Sprintf("$%s/1k", q.price.FetchInputCurrencyPrice(model.DollarRate))
-		} else {
-			modelRatioStr = fmt.Sprintf("$%s/1k (输入) | $%s/1k (输出)", q.price.FetchInputCurrencyPrice(model.DollarRate), q.price.FetchOutputCurrencyPrice(model.DollarRate))
-		}
-	}
-
-	return fmt.Sprintf("模型费率 %s，分组倍率 %.2f", modelRatioStr, q.groupRatio)
+func (q *Quota) getRequestTime() int {
+	return int(time.Since(q.startTime).Milliseconds())
 }
 
 // 通过 token 数获取消费配额
-func (q *Quota) GetTotalQuota(promptTokens, completionTokens int) (quota int) {
+func (q *Quota) GetTotalQuota(promptTokens, completionTokens int, extraBilling map[string]types.ExtraBilling) (quota int) {
 	if q.price.Type == model.TimesPriceType {
 		quota = int(1000 * q.inputRatio)
 	} else {
 		quota = int(math.Ceil((float64(promptTokens) * q.inputRatio) + (float64(completionTokens) * q.outputRatio)))
+	}
+
+	q.GetExtraBillingData(extraBilling)
+	extraBillingQuota := 0
+	if q.extraBillingData != nil {
+		for _, value := range q.extraBillingData {
+			extraBillingQuota += int(math.Ceil(
+				float64(value.Price)*float64(config.QuotaPerUnit),
+			)) * value.CallCount
+		}
+	}
+
+	if extraBillingQuota > 0 {
+		quota += int(math.Ceil(
+			float64(extraBillingQuota) * q.groupRatio,
+		))
 	}
 
 	if q.inputRatio != 0 && quota <= 0 {
@@ -294,32 +284,16 @@ func (q *Quota) GetTotalQuota(promptTokens, completionTokens int) (quota int) {
 func (q *Quota) getComputeTokensByUsage(usage *types.Usage) (promptTokens, completionTokens int) {
 	promptTokens = usage.PromptTokens
 	completionTokens = usage.CompletionTokens
-	completionDetails := usage.CompletionTokensDetails
-	promptDetails := usage.PromptTokensDetails
 
-	if promptDetails.CachedTokens > 0 {
-		cachedTokensRatio := q.price.GetExtraRatio("cached_tokens_ratio")
-		promptTokens -= int(float64(promptDetails.CachedTokens) * cachedTokensRatio)
-	}
+	extraTokens := usage.GetExtraTokens()
 
-	if promptDetails.AudioTokens > 0 {
-		inputAudioTokensRatio := q.price.GetExtraRatio("input_audio_tokens_ratio") - 1
-		promptTokens += int(float64(promptDetails.AudioTokens) * inputAudioTokensRatio)
-	}
-
-	if promptDetails.CachedWriteTokens > 0 {
-		cachedWriteTokensRatio := q.price.GetExtraRatio("cached_write_ratio")
-		promptTokens += int(float64(promptDetails.CachedWriteTokens) * cachedWriteTokensRatio)
-	}
-
-	if promptDetails.CachedReadTokens > 0 {
-		cachedReadTokensRatio := q.price.GetExtraRatio("cached_read_ratio")
-		promptTokens += int(float64(promptDetails.CachedReadTokens) * cachedReadTokensRatio)
-	}
-
-	if completionDetails.AudioTokens > 0 {
-		outputAudioTokensRatio := q.price.GetExtraRatio("output_audio_tokens_ratio") - 1
-		completionTokens += int(float64(completionDetails.AudioTokens) * outputAudioTokensRatio)
+	for key, value := range extraTokens {
+		extraRatio := q.price.GetExtraRatio(key)
+		if model.GetExtraPriceIsPrompt(key) {
+			promptTokens += model.GetIncreaseTokens(value, extraRatio)
+		} else {
+			completionTokens += model.GetIncreaseTokens(value, extraRatio)
+		}
 	}
 
 	return
@@ -328,22 +302,15 @@ func (q *Quota) getComputeTokensByUsage(usage *types.Usage) (promptTokens, compl
 func (q *Quota) getComputeTokensByUsageEvent(usage *types.UsageEvent) (promptTokens, completionTokens int) {
 	promptTokens = usage.InputTokens
 	completionTokens = usage.OutputTokens
-	inputDetails := usage.InputTokenDetails
+	extraTokens := usage.GetExtraTokens()
 
-	if inputDetails.CachedTokens > 0 {
-		cachedTokensRatio := q.price.GetExtraRatio("cached_tokens_ratio")
-		promptTokens -= int(float64(inputDetails.CachedTokens) * cachedTokensRatio)
-	}
-	if inputDetails.AudioTokens > 0 {
-		inputAudioTokensRatio := q.price.GetExtraRatio("input_audio_tokens_ratio") - 1
-		promptTokens += int(float64(inputDetails.AudioTokens) * inputAudioTokensRatio)
-	}
-
-	outputDetails := usage.OutputTokenDetails
-
-	if outputDetails.AudioTokens > 0 {
-		outputAudioTokensRatio := q.price.GetExtraRatio("output_audio_tokens_ratio") - 1
-		completionTokens += int(float64(outputDetails.AudioTokens) * outputAudioTokensRatio)
+	for key, value := range extraTokens {
+		extraRatio := q.price.GetExtraRatio(key)
+		if model.GetExtraPriceIsPrompt(key) {
+			promptTokens += model.GetIncreaseTokens(value, extraRatio)
+		} else {
+			completionTokens += model.GetIncreaseTokens(value, extraRatio)
+		}
 	}
 
 	return
@@ -352,5 +319,46 @@ func (q *Quota) getComputeTokensByUsageEvent(usage *types.UsageEvent) (promptTok
 // 通过 usage 获取消费配额
 func (q *Quota) GetTotalQuotaByUsage(usage *types.Usage) (quota int) {
 	promptTokens, completionTokens := q.getComputeTokensByUsage(usage)
-	return q.GetTotalQuota(promptTokens, completionTokens)
+	return q.GetTotalQuota(promptTokens, completionTokens, usage.ExtraBilling)
+}
+
+func (q *Quota) GetFirstResponseTime() int64 {
+	// 先判断 firstResponseTime 是否为0
+	if q.firstResponseTime.IsZero() {
+		return 0
+	}
+
+	return q.firstResponseTime.Sub(q.startTime).Milliseconds()
+}
+
+func (q *Quota) SetFirstResponseTime(firstResponseTime time.Time) {
+	q.firstResponseTime = firstResponseTime
+}
+
+type ExtraBillingData struct {
+	Type      string  `json:"type"`
+	CallCount int     `json:"call_count"`
+	Price     float64 `json:"price"`
+}
+
+func (q *Quota) GetExtraBillingData(extraBilling map[string]types.ExtraBilling) {
+	if extraBilling == nil {
+		return
+	}
+
+	extraBillingData := make(map[string]ExtraBillingData)
+	for serviceType, value := range extraBilling {
+		extraBillingData[serviceType] = ExtraBillingData{
+			Type:      value.Type,
+			CallCount: value.CallCount,
+			Price:     getDefaultExtraServicePrice(serviceType, q.modelName, value.Type),
+		}
+
+	}
+
+	if len(extraBillingData) == 0 {
+		return
+	}
+
+	q.extraBillingData = extraBillingData
 }

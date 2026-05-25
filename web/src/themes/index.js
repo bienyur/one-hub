@@ -7,7 +7,13 @@ import colors from 'assets/scss/_themes-vars.module.scss';
 import componentStyleOverrides from './compStyleOverride';
 import themePalette from './palette';
 import themeTypography from './typography';
-import { varAlpha } from './utils';
+import { varAlpha, createGradient } from './utils';
+
+// 创建自定义渐变背景色
+const customGradients = {
+  primary: createGradient(colors.primaryMain, colors.primaryDark),
+  secondary: createGradient(colors.secondaryMain, colors.secondaryDark)
+};
 
 /**
  * Represent theme style and structure as per Material-UI
@@ -19,6 +25,7 @@ export const theme = (customization) => {
   const options = customization.theme === 'light' ? GetLightOption() : GetDarkOption();
   const themeOption = {
     colors: color,
+    gradients: customGradients,
     ...options,
     customization
   };
@@ -29,13 +36,30 @@ export const theme = (customization) => {
     mixins: {
       toolbar: {
         minHeight: '48px',
-        padding: '16px',
+        padding: '8px 16px',
         '@media (min-width: 600px)': {
           minHeight: '48px'
         }
       }
     },
-    typography: themeTypography(themeOption)
+    shape: {
+      borderRadius: themeOption?.customization?.borderRadius || 8
+    },
+    typography: themeTypography(themeOption),
+    breakpoints: {
+      values: {
+        xs: 0,
+        sm: 600,
+        md: 900,
+        lg: 1200,
+        xl: 1536
+      }
+    },
+    zIndex: {
+      modal: 1300,
+      snackbar: 1400,
+      tooltip: 1500
+    }
   };
 
   const themes = createTheme(themeOptions);
@@ -50,23 +74,23 @@ function GetDarkOption() {
   const color = colors;
   return {
     mode: 'dark',
-    heading: color.darkTextTitle,
-    paper: color.darkLevel2,
-    backgroundDefault: color.darkPaper,
-    background: color.darkBackground,
-    darkTextPrimary: color.darkTextDark,
-    darkTextSecondary: color.darkPrimaryLight,
-    textDark: color.darkTextTitle,
-    menuSelected: color.primary200,
+    heading: '#FFFFFF',
+    paper: color.darkPaper,
+    backgroundDefault: color.darkBackground,
+    background: color.darkLevel2,
+    darkTextPrimary: '#FFFFFF',
+    darkTextSecondary: color.grey500,
+    textDark: '#FFFFFF',
+    menuSelected: color.primaryLight,
     menuSelectedBack: varAlpha(color.primaryMain, 0.16),
-    divider: color.darkDivider,
-    borderColor: color.darkBorderColor,
-    menuButton: color.darkLevel1,
+    divider: varAlpha(color.grey500, 0.2),
+    borderColor: varAlpha(color.grey500, 0.2),
+    menuButton: '#28323D',
     menuButtonColor: color.primaryMain,
-    menuChip: color.darkLevel1,
-    headBackgroundColor: color.darkTableHeader,
-    headBackgroundColorHover: varAlpha(color.darkTableHeader, 0.4),
-    tableBorderBottom: color.darkDivider
+    menuChip: '#28323D',
+    headBackgroundColor: '#28323D',
+    headBackgroundColorHover: varAlpha('#28323D', 0.08),
+    tableBorderBottom: varAlpha(color.grey500, 0.2)
   };
 }
 
@@ -74,22 +98,22 @@ function GetLightOption() {
   const color = colors;
   return {
     mode: 'light',
-    heading: color.grey900,
-    paper: color.paper,
-    backgroundDefault: color.paper,
-    background: color.primaryLight,
-    darkTextPrimary: color.grey700,
-    darkTextSecondary: color.grey500,
-    textDark: color.grey900,
+    heading: color.grey800,
+    paper: '#FFFFFF',
+    backgroundDefault: '#FFFFFF',
+    background: '#FFFFFF',
+    darkTextPrimary: color.grey800,
+    darkTextSecondary: color.grey600,
+    textDark: color.grey800,
     menuSelected: color.primaryMain,
-    menuSelectedBack: varAlpha(color.primary200, 0.08),
-    divider: color.grey200,
+    menuSelectedBack: varAlpha(color.primaryMain, 0.08),
+    divider: varAlpha(color.grey500, 0.2),
     borderColor: color.grey300,
-    menuButton: varAlpha(color.primary200, 0.2),
+    menuButton: varAlpha(color.primaryMain, 0.08),
     menuButtonColor: color.primaryMain,
-    menuChip: color.primaryLight,
-    headBackgroundColor: color.tableBackground,
-    headBackgroundColorHover: varAlpha(color.darkTableHeader, 0.08),
-    tableBorderBottom: color.tableBorderBottom
+    menuChip: color.grey200,
+    headBackgroundColor: color.grey200,
+    headBackgroundColorHover: varAlpha(color.grey200, 0.12),
+    tableBorderBottom: color.grey300
   };
 }

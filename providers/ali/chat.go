@@ -18,6 +18,10 @@ type aliStreamHandler struct {
 }
 
 func (p *AliProvider) CreateChatCompletion(request *types.ChatCompletionRequest) (*types.ChatCompletionResponse, *types.OpenAIErrorWithStatusCode) {
+	if p.UseOpenaiAPI {
+		return p.OpenAIProvider.CreateChatCompletion(request)
+	}
+
 	req, errWithCode := p.getAliChatRequest(request)
 	if errWithCode != nil {
 		return nil, errWithCode
@@ -35,6 +39,10 @@ func (p *AliProvider) CreateChatCompletion(request *types.ChatCompletionRequest)
 }
 
 func (p *AliProvider) CreateChatCompletionStream(request *types.ChatCompletionRequest) (requester.StreamReaderInterface[string], *types.OpenAIErrorWithStatusCode) {
+	if p.UseOpenaiAPI {
+		return p.OpenAIProvider.CreateChatCompletionStream(request)
+	}
+
 	req, errWithCode := p.getAliChatRequest(request)
 	if errWithCode != nil {
 		return nil, errWithCode
@@ -111,11 +119,18 @@ func (p *AliProvider) convertToChatOpenai(response *AliChatResponse, request *ty
 
 // 阿里云聊天请求体
 func (p *AliProvider) convertFromChatOpenai(request *types.ChatCompletionRequest) *AliChatRequest {
-	request.ClearEmptyMessages()
 	messages := make([]AliMessage, 0, len(request.Messages))
 	for i := 0; i < len(request.Messages); i++ {
 		message := request.Messages[i]
-		if !strings.HasPrefix(request.Model, "qwen-vl") {
+		modelKeywords := strings.Split(VisionModelKeywords, ",")
+		isVisionModel := false
+		for _, keyword := range modelKeywords {
+			if strings.Contains(request.Model, keyword) {
+				isVisionModel = true
+				break
+			}
+		}
+		if !isVisionModel {
 			messages = append(messages, AliMessage{
 				Content: message.StringContent(),
 				Role:    strings.ToLower(message.Role),
@@ -150,6 +165,7 @@ func (p *AliProvider) convertFromChatOpenai(request *types.ChatCompletionRequest
 		Parameters: AliParameters{
 			ResultFormat:      "message",
 			IncrementalOutput: request.Stream,
+			EnableThinking:    request.EnableThinking,
 		},
 	}
 
@@ -168,7 +184,14 @@ func (p *AliProvider) pluginHandle(request *AliChatRequest) {
 	// 检测是否开启了 web_search 插件
 	if pWeb, ok := plugin["web_search"]; ok {
 		if enable, ok := pWeb["enable"].(bool); ok && enable {
-			request.Parameters.EnableSearch = true
+			// 检查当前模型是否包含支持列表中的字符串
+			supportedModels := strings.Split(WebSearchSupportedModels, ",")
+			for _, model := range supportedModels {
+				if strings.Contains(request.Model, model) {
+					request.Parameters.EnableSearch = true
+					break
+				}
+			}
 		}
 	}
 }
@@ -203,10 +226,11 @@ func (h *aliStreamHandler) handlerStream(rawLine *[]byte, dataChan chan string, 
 
 func (h *aliStreamHandler) convertToOpenaiStream(aliResponse *AliChatResponse, dataChan chan string) {
 	content := aliResponse.Output.Choices[0].Message.StringContent()
-
+	reasoningContent := aliResponse.Output.Choices[0].Message.ReasoningContent
 	var choice types.ChatCompletionStreamChoice
 	choice.Index = aliResponse.Output.Choices[0].Index
 	choice.Delta.Content = strings.TrimPrefix(content, h.lastStreamResponse)
+	choice.Delta.ReasoningContent = reasoningContent
 	if aliResponse.Output.Choices[0].FinishReason != "" {
 		if aliResponse.Output.Choices[0].FinishReason != "null" {
 			finishReason := aliResponse.Output.Choices[0].FinishReason

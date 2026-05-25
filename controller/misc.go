@@ -35,6 +35,7 @@ func GetStatus(c *gin.Context) {
 			"logo":                config.Logo,
 			"language":            config.Language,
 			"footer_html":         config.Footer,
+			"analytics_code":      config.AnalyticsCode,
 			"wechat_qrcode":       config.WeChatAccountQRCodeImageURL,
 			"wechat_login":        config.WeChatAuthEnabled,
 			"server_address":      config.ServerAddress,
@@ -50,37 +51,38 @@ func GetStatus(c *gin.Context) {
 			"PaymentUSDRate":      config.PaymentUSDRate,
 			"PaymentMinAmount":    config.PaymentMinAmount,
 			"RechargeDiscount":    config.RechargeDiscount,
+			"EnableSafe":          config.EnableSafe,
+			"SafeToolName":        config.SafeToolName,
+			"SafeKeyWords":        config.SafeKeyWords,
+			"UserInvoiceMonth":    config.UserInvoiceMonth,
+			"UptimeDomain":        config.UPTIMEKUMA_DOMAIN,
+			"UptimePageName":      config.UPTIMEKUMA_STATUS_PAGE_NAME,
+			"UptimeEnabled":       config.UPTIMEKUMA_ENABLE,
 		},
 	})
 }
 
 func GetNotice(c *gin.Context) {
-	config.OptionMapRWMutex.RLock()
-	defer config.OptionMapRWMutex.RUnlock()
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    config.OptionMap["Notice"],
+		"data":    config.GlobalOption.Get("Notice"),
 	})
 }
 
 func GetAbout(c *gin.Context) {
-	config.OptionMapRWMutex.RLock()
-	defer config.OptionMapRWMutex.RUnlock()
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    config.OptionMap["About"],
+		"data":    config.GlobalOption.Get("About"),
 	})
 }
 
 func GetHomePageContent(c *gin.Context) {
-	config.OptionMapRWMutex.RLock()
-	defer config.OptionMapRWMutex.RUnlock()
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    config.OptionMap["HomePageContent"],
+		"data":    config.GlobalOption.Get("HomePageContent"),
 	})
 }
 

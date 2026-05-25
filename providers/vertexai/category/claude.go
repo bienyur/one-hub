@@ -24,6 +24,10 @@ var claudeMap = map[string]string{
 	"claude-3-sonnet-20240229":   "claude-3-sonnet@20240229",
 	"claude-3-haiku-20240307":    "claude-3-haiku@20240307",
 	"claude-3-5-haiku-20241022":  "claude-3-5-haiku@20241022",
+	"claude-3-7-sonnet-20250219": "claude-3-7-sonnet@20250219",
+	"claude-sonnet-4-20250514":   "claude-sonnet-4@20250514",
+	"claude-opus-4-20250514":     "claude-opus-4@20250514",
+	"claude-opus-4-1-20250805":   "claude-opus-4-1@20250805",
 }
 
 func init() {

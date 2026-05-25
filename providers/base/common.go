@@ -30,6 +30,7 @@ type ProviderConfig struct {
 	ModelList           string
 	Rerank              string
 	ChatRealtime        string
+	Responses           string
 }
 
 func (pc *ProviderConfig) SetAPIUri(customMapping map[string]interface{}) {
@@ -44,6 +45,7 @@ func (pc *ProviderConfig) SetAPIUri(customMapping map[string]interface{}) {
 		config.RelayModeImagesGenerations:  &pc.ImagesGenerations,
 		config.RelayModeImagesEdits:        &pc.ImagesEdit,
 		config.RelayModeImagesVariations:   &pc.ImagesVariations,
+		config.RelayModeResponses:          &pc.Responses,
 	}
 
 	for key, value := range customMapping {
@@ -68,12 +70,14 @@ func (pc *ProviderConfig) SetAPIUri(customMapping map[string]interface{}) {
 }
 
 type BaseProvider struct {
-	OriginalModel string
-	Usage         *types.Usage
-	Config        ProviderConfig
-	Context       *gin.Context
-	Channel       *model.Channel
-	Requester     *requester.HTTPRequester
+	OriginalModel   string
+	Usage           *types.Usage
+	Config          ProviderConfig
+	Context         *gin.Context
+	Channel         *model.Channel
+	Requester       *requester.HTTPRequester
+	OtherArg        string
+	SupportResponse bool
 }
 
 // 获取基础URL
@@ -160,6 +164,22 @@ func (p *BaseProvider) ModelMappingHandler(modelName string) (string, error) {
 	return modelName, nil
 }
 
+// CustomParameterHandler processes extra parameters from the channel and returns them as a map
+func (p *BaseProvider) CustomParameterHandler() (map[string]interface{}, error) {
+	customParameter := p.Channel.GetCustomParameter()
+	if customParameter == "" || customParameter == "{}" {
+		return nil, nil
+	}
+
+	customParams := make(map[string]interface{})
+	err := json.Unmarshal([]byte(customParameter), &customParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return customParams, nil
+}
+
 func (p *BaseProvider) GetAPIUri(relayMode int) string {
 	switch relayMode {
 	case config.RelayModeChatCompletions:
@@ -186,6 +206,8 @@ func (p *BaseProvider) GetAPIUri(relayMode int) string {
 		return p.Config.Rerank
 	case config.RelayModeChatRealtime:
 		return p.Config.ChatRealtime
+	case config.RelayModeResponses:
+		return p.Config.Responses
 	default:
 		return ""
 	}
@@ -203,4 +225,25 @@ func (p *BaseProvider) GetSupportedAPIUri(relayMode int) (url string, err *types
 
 func (p *BaseProvider) GetRequester() *requester.HTTPRequester {
 	return p.Requester
+}
+
+func (p *BaseProvider) GetOtherArg() string {
+	return p.OtherArg
+}
+
+func (p *BaseProvider) SetOtherArg(otherArg string) {
+	p.OtherArg = otherArg
+}
+
+func (p *BaseProvider) GetSupportedResponse() bool {
+	return p.SupportResponse
+}
+
+func (p *BaseProvider) GetRawBody() ([]byte, bool) {
+	if raw, exists := p.Context.Get(config.GinRequestBodyKey); exists {
+		if bytes, ok := raw.([]byte); ok {
+			return bytes, true
+		}
+	}
+	return nil, false
 }

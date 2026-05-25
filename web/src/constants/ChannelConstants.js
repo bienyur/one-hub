@@ -20,6 +20,13 @@ export const CHANNEL_OPTIONS = {
     color: 'orange',
     url: 'https://oai.azure.com/'
   },
+  55: {
+    key: 55,
+    text: 'Azure OpenAI V1',
+    value: 55,
+    color: 'secondary',
+    url: 'https://oai.azure.com/'
+  },
   11: {
     key: 11,
     text: 'Google PaLM2',
@@ -68,6 +75,13 @@ export const CHANNEL_OPTIONS = {
     value: 19,
     color: 'default',
     url: 'https://ai.360.com/open'
+  },
+  20: {
+    key: 20,
+    text: 'OpenRouter',
+    value: 20,
+    color: 'default',
+    url: 'https://openrouter.ai/'
   },
   23: {
     key: 23,
@@ -172,7 +186,7 @@ export const CHANNEL_OPTIONS = {
     text: 'Ollama',
     value: 39,
     color: 'orange',
-    url: ''
+    url: 'https://ollama.com'
   },
   40: {
     key: 40,
@@ -242,6 +256,20 @@ export const CHANNEL_OPTIONS = {
     value: 53,
     color: 'warning',
     url: 'https://api.kling.ai'
+  },
+  54: {
+    key: 54,
+    text: 'Azure Databricks',
+    value: 54,
+    color: 'orange',
+    url: ''
+  },
+  56: {
+    key: 56,
+    text: 'xAI',
+    value: 56,
+    color: 'orange',
+    url: 'https://x.ai'
   },
   8: {
     key: 8,

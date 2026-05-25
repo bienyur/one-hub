@@ -11,10 +11,16 @@ const (
 )
 
 const (
-	ContentTypeText       = "text"
-	ContentTypeImage      = "image"
-	ContentTypeToolUes    = "tool_use"
-	ContentTypeToolResult = "tool_result"
+	ContentTypeText             = "text"
+	ContentTypeImage            = "image"
+	ContentTypeToolUes          = "tool_use"
+	ContentTypeToolResult       = "tool_result"
+	ContentTypeThinking         = "thinking"
+	ContentTypeRedactedThinking = "redacted_thinking"
+
+	ContentStreamTypeThinking       = "thinking_delta"
+	ContentStreamTypeSignatureDelta = "signature_delta"
+	ContentStreamTypeInputJsonDelta = "input_json_delta"
 )
 
 type ClaudeError struct {
@@ -54,11 +60,21 @@ type ClaudeMetadata struct {
 }
 
 type ResContent struct {
-	Text  string `json:"text,omitempty"`
-	Type  string `json:"type"`
-	Name  string `json:"name,omitempty"`
-	Input any    `json:"input,omitempty"`
-	Id    string `json:"id,omitempty"`
+	Text       string `json:"text,omitempty"`
+	Type       string `json:"type"`
+	Name       string `json:"name,omitempty"`
+	Input      any    `json:"input,omitempty"`
+	Id         string `json:"id,omitempty"`
+	Thinking   string `json:"thinking,omitempty"`
+	Signature  string `json:"signature,omitempty"`
+	Delta      string `json:"delta,omitempty"`
+	Citations  any    `json:"citations,omitempty"`
+	Content    any    `json:"content,omitempty"`
+	ToolUseId  string `json:"tool_use_id,omitempty"`
+	ServerName string `json:"server_name,omitempty"`
+	IsError    *bool  `json:"is_error,omitempty"`
+	FileId     string `json:"file_id,omitempty"`
+	Data       string `json:"data,omitempty"`
 }
 
 func (g *ResContent) ToOpenAITool() *types.ChatCompletionToolCalls {
@@ -77,8 +93,9 @@ func (g *ResContent) ToOpenAITool() *types.ChatCompletionToolCalls {
 
 type ContentSource struct {
 	Type      string `json:"type"`
-	MediaType string `json:"media_type"`
-	Data      string `json:"data"`
+	MediaType string `json:"media_type,omitempty"`
+	Data      string `json:"data,omitempty"`
+	Url       string `json:"url,omitempty"`
 }
 
 type MessageContent struct {
@@ -110,10 +127,16 @@ type ClaudeRequest struct {
 	TopK          *int        `json:"top_k,omitempty"`
 	Tools         []Tools     `json:"tools,omitempty"`
 	ToolChoice    *ToolChoice `json:"tool_choice,omitempty"`
+	Thinking      *Thinking   `json:"thinking,omitempty"`
+	McpServers    any         `json:"mcp_servers,omitempty"`
 	//ClaudeMetadata    `json:"metadata,omitempty"`
 	Stream bool `json:"stream,omitempty"`
 }
 
+type Thinking struct {
+	Type         string `json:"type,omitempty"`
+	BudgetTokens int    `json:"budget_tokens,omitempty"`
+}
 type ToolChoice struct {
 	Type                   string `json:"type,omitempty"`
 	Name                   string `json:"name,omitempty"`
@@ -136,6 +159,13 @@ type Usage struct {
 	OutputTokens             int `json:"output_tokens,omitempty"`
 	CacheCreationInputTokens int `json:"cache_creation_input_tokens,omitempty"`
 	CacheReadInputTokens     int `json:"cache_read_input_tokens,omitempty"`
+	CacheCreation            any `json:"cache_creation,omitempty"`
+
+	ServerToolUse *ServerToolUse `json:"server_tool_use,omitempty"`
+}
+
+type ServerToolUse struct {
+	WebSearchRequests int `json:"web_search_requests,omitempty"`
 }
 type ClaudeResponse struct {
 	Id           string       `json:"id"`
@@ -147,6 +177,8 @@ type ClaudeResponse struct {
 	StopSequence string       `json:"stop_sequence,omitempty"`
 	Usage        Usage        `json:"usage,omitempty"`
 	Error        *ClaudeError `json:"error,omitempty"`
+
+	Container any `json:"container,omitempty"`
 }
 
 type Delta struct {
@@ -155,6 +187,9 @@ type Delta struct {
 	PartialJson  string `json:"partial_json,omitempty"`
 	StopReason   string `json:"stop_reason,omitempty"`
 	StopSequence string `json:"stop_sequence,omitempty"`
+	Thinking     string `json:"thinking,omitempty"`
+	Signature    string `json:"signature,omitempty"`
+	Citations    any    `json:"citations,omitempty"`
 }
 
 type ClaudeStreamResponse struct {
@@ -173,4 +208,13 @@ type ContentBlock struct {
 	Name  string `json:"name,omitempty"`
 	Input any    `json:"input,omitempty"`
 	Text  string `json:"text,omitempty"`
+}
+
+type ModelListResponse struct {
+	Data []Model `json:"data"`
+}
+
+type Model struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
 }

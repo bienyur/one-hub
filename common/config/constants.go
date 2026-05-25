@@ -1,7 +1,6 @@
 package config
 
 import (
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,15 +22,16 @@ var Logo = ""
 var TopUpLink = ""
 var ChatLink = ""
 var ChatLinks = ""
+var AnalyticsCode = ""
 var QuotaPerUnit = 500 * 1000.0 // $0.002 / 1K tokens
 var DisplayInCurrencyEnabled = true
+
+// 是否开启用户月账单功能
+var UserInvoiceMonth = false
 
 // Any options with "Secret", "Token" in its key won't be return by GetOptions
 
 var SessionSecret = uuid.New().String()
-
-var OptionMap map[string]string
-var OptionMapRWMutex sync.RWMutex
 
 var ItemsPerPage = 10
 var MaxRecentItems = 100
@@ -45,6 +45,85 @@ var LarkAuthEnabled = false
 var TurnstileCheckEnabled = false
 var RegisterEnabled = true
 var OIDCAuthEnabled = false
+
+// 是否开启内容审查
+var EnableSafe = false
+
+// 默认使用系统自带关键词审查工具
+var SafeToolName = "Keyword"
+
+// 系统自带关键词审查默认字典
+var SafeKeyWords = []string{
+	"fuck",
+	"shit",
+	"bitch",
+	"pussy",
+	"cunt",
+	"dick",
+	"asshole",
+	"bastard",
+	"slut",
+	"whore",
+	"nigger",
+	"nigga",
+	"nazi",
+	"gay",
+	"lesbian",
+	"transgender",
+	"queer",
+	"homosexual",
+	"incest",
+	"rape",
+	"rapist",
+	"raped",
+	"raping",
+	"raped",
+	"raping",
+	"rapist",
+	"rape",
+	"sex",
+	"sexual",
+	"sexually",
+	"sexualize",
+	"sexualized",
+	"sexualizes",
+	"sexualizing",
+	"sexually",
+	"sex",
+	"porn",
+	"pornography",
+	"prostitute",
+	"prostitution",
+	"masturbate",
+	"masturbation",
+	"pedophile",
+	"pedophilia",
+	"hentai",
+	"explicit",
+	"obscene",
+	"obscenity",
+	"erotic",
+	"erotica",
+	"fetish",
+	"NSFW",
+	"nude",
+	"nudity",
+	"harassment",
+	"abuse",
+	"violent",
+	"violence",
+	"suicide",
+	"racist",
+	"racism",
+	"discrimination",
+	"hate",
+	"terrorism",
+	"terrorist",
+	"drugs",
+	"cocaine",
+	"heroin",
+	"methamphetamine",
+}
 
 // mj
 var MjNotifyEnabled = false
@@ -72,10 +151,9 @@ var SMTPAccount = ""
 var SMTPFrom = ""
 var SMTPToken = ""
 
-var AudioTokenJson = ""
-
 var ChatImageRequestProxy = ""
 
+var GitHubProxy = ""
 var GitHubClientId = ""
 var GitHubClientSecret = ""
 var GitHubOldIdCloseEnabled = false
@@ -107,6 +185,8 @@ var PreConsumedQuota = 500
 var ApproximateTokenEnabled = false
 var DisableTokenEncoders = false
 var RetryTimes = 0
+var RetryTimeOut = 10
+
 var DefaultChannelWeight = uint(1)
 var RetryCooldownSeconds = 5
 
@@ -122,11 +202,24 @@ var RequestInterval time.Duration
 var BatchUpdateEnabled = false
 var BatchUpdateInterval = 5
 
+var MCP_ENABLE = false
+
+var UPTIMEKUMA_ENABLE = false
+var UPTIMEKUMA_DOMAIN = ""
+var UPTIMEKUMA_STATUS_PAGE_NAME = ""
+
+// Gemini
+var GeminiAPIEnabled = true
+
+// Claude
+var ClaudeAPIEnabled = true
+
 const (
-	RoleGuestUser  = 0
-	RoleCommonUser = 1
-	RoleAdminUser  = 10
-	RoleRootUser   = 100
+	RoleGuestUser     = 0
+	RoleCommonUser    = 1
+	RoleReliableUser  = 3   // 可信的内部员工
+	RoleAdminUser     = 10
+	RoleRootUser      = 100
 )
 
 var RateLimitKeyExpirationDuration = 20 * time.Minute
@@ -171,45 +264,48 @@ const (
 	ChannelTypePaLM = 11
 	// ChannelTypeAPI2GPT        = 12
 	// ChannelTypeAIGC2D         = 13
-	ChannelTypeAnthropic = 14
-	ChannelTypeBaidu     = 15
-	ChannelTypeZhipu     = 16
-	ChannelTypeAli       = 17
-	ChannelTypeXunfei    = 18
-	ChannelType360       = 19
-	// ChannelTypeOpenRouter = 20
+	ChannelTypeAnthropic  = 14
+	ChannelTypeBaidu      = 15
+	ChannelTypeZhipu      = 16
+	ChannelTypeAli        = 17
+	ChannelTypeXunfei     = 18
+	ChannelType360        = 19
+	ChannelTypeOpenRouter = 20
 	// ChannelTypeAIProxyLibrary = 21
 	// ChannelTypeFastGPT        = 22
-	ChannelTypeTencent      = 23
-	ChannelTypeAzureSpeech  = 24
-	ChannelTypeGemini       = 25
-	ChannelTypeBaichuan     = 26
-	ChannelTypeMiniMax      = 27
-	ChannelTypeDeepseek     = 28
-	ChannelTypeMoonshot     = 29
-	ChannelTypeMistral      = 30
-	ChannelTypeGroq         = 31
-	ChannelTypeBedrock      = 32
-	ChannelTypeLingyi       = 33
-	ChannelTypeMidjourney   = 34
-	ChannelTypeCloudflareAI = 35
-	ChannelTypeCohere       = 36
-	ChannelTypeStabilityAI  = 37
-	ChannelTypeCoze         = 38
-	ChannelTypeOllama       = 39
-	ChannelTypeHunyuan      = 40
-	ChannelTypeSuno         = 41
-	ChannelTypeVertexAI     = 42
-	ChannelTypeLLAMA        = 43
-	ChannelTypeIdeogram     = 44
-	ChannelTypeSiliconflow  = 45
-	ChannelTypeFlux         = 46
-	ChannelTypeJina         = 47
-	ChannelTypeRerank       = 48
-	ChannelTypeGithub       = 49
-	ChannelTypeRecraft      = 51
-	ChannelTypeReplicate    = 52
-	ChannelTypeKling        = 53
+	ChannelTypeTencent         = 23
+	ChannelTypeAzureSpeech     = 24
+	ChannelTypeGemini          = 25
+	ChannelTypeBaichuan        = 26
+	ChannelTypeMiniMax         = 27
+	ChannelTypeDeepseek        = 28
+	ChannelTypeMoonshot        = 29
+	ChannelTypeMistral         = 30
+	ChannelTypeGroq            = 31
+	ChannelTypeBedrock         = 32
+	ChannelTypeLingyi          = 33
+	ChannelTypeMidjourney      = 34
+	ChannelTypeCloudflareAI    = 35
+	ChannelTypeCohere          = 36
+	ChannelTypeStabilityAI     = 37
+	ChannelTypeCoze            = 38
+	ChannelTypeOllama          = 39
+	ChannelTypeHunyuan         = 40
+	ChannelTypeSuno            = 41
+	ChannelTypeVertexAI        = 42
+	ChannelTypeLLAMA           = 43
+	ChannelTypeIdeogram        = 44
+	ChannelTypeSiliconflow     = 45
+	ChannelTypeFlux            = 46
+	ChannelTypeJina            = 47
+	ChannelTypeRerank          = 48
+	ChannelTypeGithub          = 49
+	ChannelTypeRecraft         = 51
+	ChannelTypeReplicate       = 52
+	ChannelTypeKling           = 53
+	ChannelTypeAzureDatabricks = 54
+	ChannelTypeAzureV1         = 55
+	ChannelTypeXAI             = 56
 )
 
 const (
@@ -229,6 +325,7 @@ const (
 	RelayModeRerank
 	RelayModeChatRealtime
 	RelayModeKling
+	RelayModeResponses
 )
 
 type ContextKey string

@@ -3,7 +3,9 @@ import { Icon } from '@iconify/react';
 const icons = {
   IconDashboard: () => <Icon width={20} icon="solar:widget-2-bold-duotone" />,
   IconChartHistogram: () => <Icon width={20} icon="solar:chart-2-bold-duotone" />,
-  IconBallFootball: () => <Icon width={20} icon="solar:chat-round-line-bold-duotone" />
+  IconBallFootball: () => <Icon width={20} icon="solar:chat-round-line-bold-duotone" />,
+  IconSystemInfo: () => <Icon width={20} icon="solar:code-scan-bold" />,
+  IconList: () => <Icon width={20} icon="solar:checklist-minimalistic-bold-duotone" />
 };
 
 const dashboard = {
@@ -13,7 +15,7 @@ const dashboard = {
   children: [
     {
       id: 'dashboard',
-      title: '仪表盘',
+      title: 'dashboard',
       type: 'item',
       url: '/panel/dashboard',
       icon: icons.IconDashboard,
@@ -22,7 +24,7 @@ const dashboard = {
     },
     {
       id: 'analytics',
-      title: '分析',
+      title: 'analytics',
       type: 'item',
       url: '/panel/analytics',
       icon: icons.IconChartHistogram,
@@ -30,12 +32,30 @@ const dashboard = {
       isAdmin: true
     },
     {
+      id: 'multi_user_stats',
+      title: 'multi_user_stats',
+      type: 'item',
+      url: '/panel/multi_user_stats',
+      icon: icons.IconList,
+      breadcrumbs: false,
+      isAdmin: true
+    },
+    {
       id: 'playground',
-      title: 'Playground',
+      title: 'playground',
       type: 'item',
       url: '/panel/playground',
       icon: icons.IconBallFootball,
       breadcrumbs: false
+    },
+    {
+      id: 'systemInfo',
+      title: 'systemInfo',
+      type: 'item',
+      url: '/panel/system_info',
+      icon: icons.IconSystemInfo,
+      breadcrumbs: false,
+      isAdmin: true
     }
   ]
 };

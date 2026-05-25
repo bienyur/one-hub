@@ -16,7 +16,7 @@ import UsersTableRow from './component/TableRow';
 import KeywordTableHead from 'ui-component/TableHead';
 import TableToolBar from 'ui-component/TableToolBar';
 import { API } from 'utils/api';
-import { ITEMS_PER_PAGE } from 'constants';
+import { PAGE_SIZE_OPTIONS, getPageSize, savePageSize } from 'constants';
 import EditeModal from './component/EditModal';
 
 import { useTranslation } from 'react-i18next';
@@ -26,7 +26,7 @@ export default function Users() {
   const [page, setPage] = useState(0);
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('id');
-  const [rowsPerPage, setRowsPerPage] = useState(ITEMS_PER_PAGE);
+  const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('user'));
   const [listCount, setListCount] = useState(0);
   const [searching, setSearching] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -49,8 +49,10 @@ export default function Users() {
   };
 
   const handleChangeRowsPerPage = (event) => {
+    const newRowsPerPage = parseInt(event.target.value, 10);
     setPage(0);
-    setRowsPerPage(parseInt(event.target.value, 10));
+    setRowsPerPage(newRowsPerPage);
+    savePageSize('user', newRowsPerPage);
   };
 
   const searchUsers = async (event) => {
@@ -111,8 +113,15 @@ export default function Users() {
       case 'status':
         valueData = { username, action: value === 1 ? 'enable' : 'disable' };
         break;
-      case 'role':
-        valueData = { username, action: value === true ? 'promote' : 'demote' };
+      case 'set_role':
+        // value 是目标角色：1=普通用户, 3=可信内部员工, 10=管理员
+        if (value === 1) {
+          valueData = { username, action: 'demote' };
+        } else if (value === 3) {
+          valueData = { username, action: 'set_reliable' };
+        } else if (value === 10) {
+          valueData = { username, action: 'promote' };
+        }
         break;
       case 'quota':
         url = `/api/user/quota/${username}`;
@@ -156,7 +165,12 @@ export default function Users() {
   return (
     <>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-        <Typography variant="h4">{t('userPage.users')}</Typography>
+        <Stack direction="column" spacing={1}>
+          <Typography variant="h2">{t('userPage.users')}</Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            User
+          </Typography>
+        </Stack>
 
         <Button
           variant="contained"
@@ -180,7 +194,7 @@ export default function Users() {
             p: (theme) => theme.spacing(0, 1, 0, 3)
           }}
         >
-          <Container>
+          <Container maxWidth="xl">
             <ButtonGroup variant="outlined" aria-label="outlined small primary button group">
               <Button onClick={handleRefresh} startIcon={<Icon icon="solar:refresh-bold-duotone" width={18} />}>
                 {t('userPage.refresh')}
@@ -204,6 +218,8 @@ export default function Users() {
                   { id: 'role', label: t('userPage.userRole'), disableSort: false },
                   { id: 'bind', label: t('userPage.bind'), disableSort: true },
                   { id: 'created_time', label: t('userPage.creationTime'), disableSort: false },
+                  { id: 'last_login_time', label: t('userPage.lastLoginTime'), disableSort: false },
+                  { id: 'last_login_ip', label: t('userPage.lastLoginIP'), disableSort: false },
                   { id: 'status', label: t('userPage.status'), disableSort: false },
                   { id: 'action', label: t('userPage.action'), disableSort: true }
                 ]}
@@ -228,7 +244,7 @@ export default function Users() {
           count={listCount}
           rowsPerPage={rowsPerPage}
           onPageChange={handleChangePage}
-          rowsPerPageOptions={[10, 25, 30]}
+          rowsPerPageOptions={PAGE_SIZE_OPTIONS}
           onRowsPerPageChange={handleChangeRowsPerPage}
           showFirstButton
           showLastButton

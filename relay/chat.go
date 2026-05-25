@@ -7,10 +7,13 @@ import (
 	"math"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/common/requester"
 	"one-api/common/utils"
 	providersBase "one-api/providers/base"
+	"one-api/safty"
 	"one-api/types"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,8 +24,12 @@ type relayChat struct {
 }
 
 func NewRelayChat(c *gin.Context) *relayChat {
-	relay := &relayChat{}
-	relay.c = c
+	relay := &relayChat{
+		relayBase: relayBase{
+			allowHeartbeat: true,
+			c:              c,
+		},
+	}
 	return relay
 }
 
@@ -39,11 +46,18 @@ func (r *relayChat) setRequest() error {
 		r.c.Set("skip_only_chat", true)
 	}
 
-	if !r.chatRequest.Stream && r.chatRequest.StreamOptions != nil {
-		return errors.New("the 'stream_options' parameter is only allowed when 'stream' is enabled")
+	if !r.chatRequest.Stream {
+		r.chatRequest.StreamOptions = nil
 	}
 
-	r.originalModel = r.chatRequest.Model
+	r.setOriginalModel(r.chatRequest.Model)
+
+	otherArg := r.getOtherArg()
+
+	if otherArg == "search" {
+		handleSearch(r.c, &r.chatRequest)
+		return nil
+	}
 
 	return nil
 }
@@ -61,7 +75,26 @@ func (r *relayChat) getPromptTokens() (int, error) {
 	return common.CountTokenMessages(r.chatRequest.Messages, r.modelName, channel.PreCost), nil
 }
 
+var need2Response = map[string]bool{
+	"o3-pro-2025-06-10":                true,
+	"o3-pro":                           true,
+	"o1-pro-2025-03-19":                true,
+	"o1-pro":                           true,
+	"o3-deep-research-2025-06-26":      true,
+	"o3-deep-research":                 true,
+	"o4-mini-deep-research-2025-06-26": true,
+	"o4-mini-deep-research":            true,
+	"codex-mini-latest":                true,
+}
+
 func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
+	if need2Response[r.modelName] {
+		resProvider, ok := r.provider.(providersBase.ResponsesInterface)
+		if ok {
+			return r.compatibleSend(resProvider)
+		}
+	}
+
 	chatProvider, ok := r.provider.(providersBase.ChatInterface)
 	if !ok {
 		err = common.StringErrorWrapperLocal("channel not implemented", "channel_error", http.StatusServiceUnavailable)
@@ -70,6 +103,19 @@ func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
 	}
 
 	r.chatRequest.Model = r.modelName
+	// 内容审查
+	if config.EnableSafe {
+		for _, message := range r.chatRequest.Messages {
+			if message.Content != nil {
+				CheckResult, _ := safty.CheckContent(message.Content)
+				if !CheckResult.IsSafe {
+					err = common.StringErrorWrapperLocal(CheckResult.Reason, CheckResult.Code, http.StatusBadRequest)
+					done = true
+					return
+				}
+			}
+		}
+	}
 
 	if r.chatRequest.Stream {
 		var response requester.StreamReaderInterface[string]
@@ -78,17 +124,28 @@ func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
 			return
 		}
 
+		if r.heartbeat != nil {
+			r.heartbeat.Stop()
+		}
+
 		doneStr := func() string {
 			return r.getUsageResponse()
 		}
 
-		err = responseStreamClient(r.c, response, doneStr)
+		var firstResponseTime time.Time
+		firstResponseTime, err = responseStreamClient(r.c, response, doneStr)
+		r.SetFirstResponseTime(firstResponseTime)
 	} else {
 		var response *types.ChatCompletionResponse
 		response, err = chatProvider.CreateChatCompletion(&r.chatRequest)
 		if err != nil {
 			return
 		}
+
+		if r.heartbeat != nil {
+			r.heartbeat.Stop()
+		}
+
 		err = responseJsonClient(r.c, response)
 
 	}
@@ -120,4 +177,46 @@ func (r *relayChat) getUsageResponse() string {
 	}
 
 	return ""
+}
+
+func (r *relayChat) compatibleSend(resProvider providersBase.ResponsesInterface) (err *types.OpenAIErrorWithStatusCode, done bool) {
+	resRequest := r.chatRequest.ToResponsesRequest()
+	resRequest.ConvertChat = true
+
+	if r.chatRequest.Stream {
+		var response requester.StreamReaderInterface[string]
+		response, err = resProvider.CreateResponsesStream(resRequest)
+		if err != nil {
+			return
+		}
+
+		if r.heartbeat != nil {
+			r.heartbeat.Stop()
+		}
+
+		doneStr := func() string {
+			return r.getUsageResponse()
+		}
+
+		var firstResponseTime time.Time
+		firstResponseTime, err = responseStreamClient(r.c, response, doneStr)
+		r.SetFirstResponseTime(firstResponseTime)
+	} else {
+		var response *types.OpenAIResponsesResponses
+		response, err = resProvider.CreateResponses(resRequest)
+		if err != nil {
+			return
+		}
+
+		if r.heartbeat != nil {
+			r.heartbeat.Stop()
+		}
+		err = responseJsonClient(r.c, response.ToChat())
+	}
+
+	if err != nil {
+		done = true
+	}
+
+	return
 }

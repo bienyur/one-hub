@@ -1,4 +1,22 @@
 {
+  "System Logs": "System Logs",
+  "view_more_logs_on_server": "To view more system logs, please go to the server",
+  "systemInfo": "System Info",
+  "Auto Refresh": "Auto Refresh",
+  "Refresh Interval": "Refresh Interval",
+  "1 second": "1 second",
+  "3 seconds": "3 seconds",
+  "5 seconds": "5 seconds",
+  "10 seconds": "10 seconds",
+  "30 seconds": "30 seconds",
+  "1 minute": "1 minute",
+  "Max Entries": "Max Entries",
+  "Clear": "Clear",
+  "No logs available": "No logs available",
+  "No matching logs found": "No matching logs found",
+  "Search logs...": "Search logs...",
+  "invite_count": "Invite Count",
+  "invite_reward": "Invite Reward",
   "AZURE_OPENAI_ENDPOINT": "AZURE_OPENAI_ENDPOINT",
   "CheckUpdatesTable": {
     "addNewOnly": "Add New Only",
@@ -18,7 +36,35 @@
     "pleaseFetchData": "Please fetch data first",
     "priceChangeModels": "Price Change Models (for reference only, ignore if you have modified the prices yourself)",
     "to": "to",
-    "url": "URL"
+    "url": "URL",
+    "priceServerTotal": "Price Server Total",
+    "updateModeAdd": "Add Only",
+    "updateModeUpdate": "Update Only",
+    "updateModeOverwrite": "Overwrite All",
+    "added": "Add",
+    "extraRatiosAdded": "Increase the expansion rate",
+    "extraRatiosChanged": "Changes in magnification ratio",
+    "extraRatiosChanges": "Changes in magnification ratio",
+    "extraRatiosChangesTip": "Changes in magnification: {{changes}}",
+    "extraRatiosRemoved": "Remove magnification ratio",
+    "modified": "Edit",
+    "removed": "Delete"
+  },
+  "menu": {
+    "home": "Home",
+    "about": "About",
+    "status": "Status",
+    "login": "Login",
+    "signup": "Sign up",
+    "signout": "Sign out",
+    "console": "Console",
+    "error": "Error",
+    "unknownVersion": "Unknown Version",
+    "welcomeBack": "Welcome Back"
+  },
+  "sidebar": {
+    "totalQuota": "Total Quota",
+    "remainingBalance": "Remaining Balance"
   },
   "Header 配置": "Header configuration",
   "about": {
@@ -89,7 +135,35 @@
     "requiredModels": "Model cannot be empty",
     "requiredName": "Name is required",
     "validJson": "Must be a valid JSON string",
-    "copyModels": "Copy model"
+    "copyModels": "Copy model",
+    "mapAdd": "Add {{name}}",
+    "mapAddByJson": "Add {{name}} through JSON",
+    "mapJsonInput": "JSON input",
+    "listJsonError": "JSON format error, please make sure the input is in array format.",
+    "listJsonHelperText": "Please enter the JSON array format, for example: [\"item1\", \"item2\", \"item3\"]",
+    "modelsFetched": "Models fetched successfully",
+    "selectedMappingCount": "Selected {{count}} model mappings",
+    "addMapping": "Add model mapping",
+    "addToModelMapping": "Add to model mapping",
+    "modelMapping": "Model mapping",
+    "modelMappingSettings": "Model mapping settings",
+    "prefixOrSuffix": "Prefix/Suffix",
+    "removePrefixHelp": "Enter the prefix you want to remove",
+    "removeSuffixHelp": "Enter the suffix you want to remove",
+    "addPlusSign": "Use mapping before billing",
+    "mappingPreview": "Mapping preview",
+    "removePrefix": "Remove prefix",
+    "removeSuffix": "Remove suffix",
+    "collapseList": "Collapse list",
+    "expandList": "Expand list",
+    "convertToLowercase": "Convert model names to lowercase",
+    "filterMappedModels": "Do not fill the model name before mapping.",
+    "overwriteModels": "Overwrite existing model list",
+    "overwriteModelsTip": "When enabled, the existing model list will be cleared and only the selected models will be preserved",
+    "overwriteMappings": "Overwrite existing mappings",
+    "overwriteMappingsTip": "When enabled, existing mappings will be cleared and only new mappings will be preserved",
+    "clearModels": "Reset",
+    "clearModelsTip": "Reset all selected models"
   },
   "channel_index": {
     "AzureApiVersion": "Azure version number",
@@ -139,12 +213,15 @@
     "unselectAll": "Anti-select all",
     "updateEnabledBalance": "Update Enabled Balance",
     "usedBalance": "Used Balance/Remaining Balance",
-    "weight": "Weight"
+    "weight": "Weight",
+    "onlyTags": "Display tags only"
   },
   "channel_row": {
     "auto": "automatic",
     "canModels": "Available models:",
     "channelWeb": "Official website",
+    "key": "Key",
+    "keyRequired": "Key is required",
     "clickUpdateQuota": "Click to update balance",
     "delChannel": "Delete channel",
     "delChannelCount": "Removed all disabled channels, {{count}} in total",
@@ -165,7 +242,38 @@
     "updateChannelBalance": "All enabled channel balances have been updated!",
     "updateOk": "update completed!",
     "weightTip": "Weight cannot be less than 1",
-    "check": "Check"
+    "check": "Check",
+    "batchAddIDRequired": "Please select at least one channel.",
+    "batchDelete": "Batch delete",
+    "batchDeleteConfirm": "Are you sure you want to delete the selected {{count}} channels? This action cannot be undone.",
+    "batchDeleteError": "Batch deletion failed: {{message}}",
+    "batchDeleteErrorTip": "Batch deletion error: {{message}}",
+    "batchDeleteSuccess": "Batch deletion successful!",
+    "batchDeleteTip": "Do you want to delete the selected channels in batch?",
+    "deleteTag": "Delete tag",
+    "deleteTagAndChannels": "Delete the tag and all its channels.",
+    "deleteTagConfirm": "Are you sure you want to delete the tag {{tag}} and all its channels? This action cannot be undone.",
+    "deleteTagError": "Failed to delete tag: {{message}}",
+    "deleteTagSuccess": "Tag {{tag}} deleted successfully",
+    "disable": "Disable",
+    "disableAllChannels": "Disable all channels",
+    "disableTagChannels": "Disable tag channel",
+    "enable": "Enable",
+    "enableAllChannels": "Enable all channels",
+    "enableTagChannels": "Enable tag channel",
+    "getTagChannelsError": "Failed to retrieve tag channel: {{message}}",
+    "getTagChannelsErrorTip": "Error getting tag channel: {{message}}",
+    "noTagChannels": "No tag channel found",
+    "priorityUpdateError": "Priority update failed: {{message}}",
+    "priorityUpdateSuccess": "Priority updated successfully",
+    "refreshList": "Refresh list",
+    "tag": "Tags",
+    "tagChannelList": "Tag channel list",
+    "tagChannelsConfirm": "Are you sure you want to {{action}} all channels under the tag {{tag}}?",
+    "tagChannelsError": "Channel {{action}} failed: {{message}}",
+    "tagChannelsSuccess": "The tag channel {{action}} is successful.",
+    "weightUpdateError": "Weight update failed: {{message}}",
+    "weightUpdateSuccess": "Weight update successful"
   },
   "common": {
     "again": "Retry ({{count}})",
@@ -175,6 +283,7 @@
     "close": "closure",
     "copyUrl": "Copy address",
     "create": "create",
+    "currency": "USD",
     "delete": "delete",
     "deleteConfirm": "Delete {{title}}?",
     "disable": "disabled",
@@ -194,6 +303,7 @@
     "processing": "Processing...",
     "registerOk": "registration success!",
     "registerTip": "The verification code was sent successfully, please check your email!",
+    "reset": "Reset",
     "saveSuccess": "Saved successfully!",
     "serverError": "Server Error",
     "show": "show",
@@ -201,7 +311,16 @@
     "unableServer": "Unable to connect to the server properly!",
     "unableServerTip": "New version available: {{version}}, please use the shortcut key Shift F5 to refresh the page",
     "unknown": "unknown",
-    "verificationCode": "Verification code"
+    "verificationCode": "Verification code",
+    "deleteError": "Deletion failed: {{message}}",
+    "deleteSuccess": "Delete successful!",
+    "jsonFormatError": "JSON format error",
+    "action": "Action",
+    "actions": "Operation",
+    "noDataAvailable": "No data available",
+    "pageSize": "Number of items per page",
+    "search": "Search",
+    "total": "Total"
   },
   "dashboard": "Dashboard",
   "dashboard_index": {
@@ -217,7 +336,29 @@
     "today_requests": "Today's Requests",
     "today_tokens": "Today's Tokens",
     "unknown": "Unknown",
-    "used": "Used"
+    "used": "Used",
+    "week_model_statistics": "Week Model Statistics",
+    "week_consumption_log": "Week Consumption Log",
+    "week_total_consumption": "Week Total Consumption",
+    "7days_model_usage_pie": "7 Days Model Usage Pie",
+    "date": "Date",
+    "request_count": "Request Count",
+    "amount": "Amount",
+    "tokens": "Tokens(input/output)",
+    "cache_tokens": "CacheTokens",
+    "request_time": "Request Time(s)",
+    "loading": "Loading...",
+    "quickStart": "Quick Start",
+    "quickStartTip": "When you click the button below, the system will automatically create a sys_playground token",
+    "ComparedWithYesterday": "Compared with yesterday",
+    "usage": "Usage",
+    "RPM": "Current RPM",
+    "TPM": "Current TPM",
+    "total": "Total number",
+    "availability": "Availability",
+    "tab_status": "Status",
+    "tab_dashboard": "Dashboard",
+    "title": "Dashboard"
   },
   "description": "All-in-one OpenAI interface\nIntegrates various API access methods\nOne-click deployment, ready to use",
   "echo 映射": "echo mapping",
@@ -246,20 +387,60 @@
   },
   "jump": "Redirecting...",
   "log": "Log",
+  "invoice": "Monthly Bill",
+  "midjourney": "Midjourney",
+  "invoice_index": {
+    "invoice": "Monthly Bill",
+    "refresh": "Refresh",
+    "id": "ID",
+    "name": "Name",
+    "status": "Status",
+    "amount": "Amount",
+    "createdTime": "Created Time",
+    "paidTime": "Paid Time",
+    "actions": "Actions",
+    "deleteInvoice": "Delete Invoice",
+    "confirmDeleteInvoice": "Are you sure you want to delete this invoice",
+    "close": "Close",
+    "delete": "Delete",
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "date": "Billing Time",
+    "requestCount": "Total Requests",
+    "quota": "Consumption Amount",
+    "promptTokens": "Input Tokens",
+    "completionTokens": "Output Tokens",
+    "requestTime": "Request Time",
+    "tokens": "Tokens (Input/Output)",
+    "alert": "Monthly bill data is generated on the 1st of each month",
+    "viewInvoice": "View Invoice",
+    "modelName": "Model Name",
+    "option": "Option",
+    "username": "Username",
+    "email": "Email",
+    "userinfo": "User Information",
+    "usage_statistics": "Usage Statistics",
+    "download": "Download PDF",
+    "usage_details": "Invoice Details",
+    "summary": "Summary"
+  },
   "logPage": {
-    "cachedTokens": "Cache Tokens",
+    "cachedTokens": "Cache Tokens (* {{ ratio }})",
     "channelLabel": "Channel",
+    "columnSettings": "Column Settings",
+    "selectColumns": "Select Columns",
+    "columnSelectAll": "Select All",
     "detailLabel": "Detail",
     "durationLabel": "Duration",
     "durationTooltip": "t/s: The number of output tokens divided by the total generation time, indicating the generation speed",
-    "groupLabel": "group",
-    "inputAudioTokens": "Input audio tokens",
+    "groupLabel": "Group",
+    "inputAudioTokens": "Input audio tokens (* {{ ratio }})",
     "inputLabel": "Input",
-    "inputTextTokens": "Input text tokens",
+    "inputTextTokens": "Input text tokens (* {{ ratio }})",
     "modelLabel": "Model",
-    "outputAudioTokens": "Output audio tokens",
+    "outputAudioTokens": "Output audio tokens (* {{ ratio }})",
     "outputLabel": "Output",
-    "outputTextTokens": "Output text tokens",
+    "outputTextTokens": "Output text tokens (* {{ ratio }})",
     "quotaLabel": "Quota",
     "refreshButton": "Refresh/Clear Search",
     "searchButton": "Search",
@@ -271,6 +452,15 @@
     "totalOutputTokens": "Total output tokens",
     "typeLabel": "Type",
     "userLabel": "User",
+    "sourceIp": "Source IP",
+    "unknown": "Unknown",
+    "logType": {
+      "all": "All",
+      "recharge": "Recharge",
+      "consumption": "Consumption",
+      "management": "Management",
+      "system": "System"
+    },
     "content": {
       "calculate_steps": "Calculation steps:",
       "calculate_steps_tip": "PS: This system calculates based on points, and all amounts are converted from points. 1 point = $0.000002, with a minimum spending of 1 point. This calculation is for reference only; actual charges may vary.",
@@ -281,10 +471,30 @@
       "original_output_price": "Original output price: ${{ price }} /M",
       "original_times_price": "Original price: ${{ times }} per time",
       "output_price": "Output: ${{ price }} /M",
-      "times_price": "${{ times }} / time"
+      "times_price": "${{ times }} / time",
+      "free": "Free",
+      "old_log": "old version log",
+      "illustrate": "* This record is the log recorded before the system upgrade"
     },
-    "cachedReadTokens": "Cache read Tokens",
-    "cachedWriteTokens": "Write tokens to cache (* {{ ratio }})"
+    "quotaDetail": {
+      "saved": "Saved ",
+      "originalPrice": "Original Price",
+      "inputPrice": "Input Price",
+      "outputPrice": "Output Price",
+      "groupRatio": "Group Ratio",
+      "groupRatioValue": "Group Ratio",
+      "actualPrice": "Actual Price",
+      "input": "Input",
+      "output": "Output",
+      "finalCalculation": "Final Calculation",
+      "originalBilling": "Original Billing",
+      "actualBilling": "Actual Billing",
+      "calculationNote": "PS: This system calculates based on points, and all amounts are converted from points. 1 point = $0.000002, with a minimum spending of 1 point. This calculation is for reference only; actual charges may vary.",
+      "times": "times"
+    },
+    "cachedReadTokens": "Cache read Tokens (* {{ ratio }})",
+    "cachedWriteTokens": "Write tokens to cache (* {{ ratio }})",
+    "reasoningTokens": "Deduction Tokens (* {{ ratio }})"
   },
   "login": {
     "codeRequired": "verification code must be filled",
@@ -309,17 +519,6 @@
     "wechatLoginInfo": "Please use WeChat to scan the QR code to follow the official account and enter the \"verification code\" to obtain the verification code (valid within three minutes)",
     "wechatVerificationCodeLogin": "WeChat verification code login"
   },
-  "menu": {
-    "about": "About",
-    "console": "Console",
-    "error": "Error",
-    "home": "Home",
-    "login": "Login",
-    "signout": "Signout",
-    "signup": "Signup",
-    "unknownVersion": "Unknown Version",
-    "welcomeBack": "Welcome Back"
-  },
   "midjourneyPage": {
     "channel": "Channel",
     "failureReason": "Failure Reason",
@@ -342,18 +541,65 @@
   "modelpricePage": {
     "availableModels": "Available Models",
     "channelType": "Supplier",
-    "group": "grouping",
-    "inputMultiplier": "Input price",
+    "provider": "Provider",
+    "group": "Group",
+    "inputPrice": "Input Price",
+    "outputPrice": "Output Price",
+    "inputMultiplier": "Input Price",
     "model": "Model Name",
-    "noneGroup": "The current group is not available.",
-    "outputMultiplier": "Output price",
-    "search": "Search",
-    "times": "times",
-    "tokens": "tokens",
+    "modelName": "Model Name",
+    "noneGroup": "Current group unavailable",
+    "outputMultiplier": "Output Price",
+    "timesPrice": "Price per Call",
+    "search": "Search model name or description",
+    "times": "Pay per call",
+    "tokens": "Pay per token",
     "type": "Type",
-    "inputAudioTokensRatio": "Audio input ratio",
+    "input_audio_tokens": "Audio Input Ratio",
     "other": "Other",
-    "outputAudioTokensRatio": "Audio output ratio"
+    "output_audio_tokens": "Audio Output Ratio",
+    "rate": "Rate",
+    "RPM": "API Rate",
+    "free": "Free",
+    "cached_tokens": "Cache Ratio",
+    "cached_write_tokens": "Cache Write Ratio",
+    "cached_read_tokens": "Cache Read Ratio",
+    "reasoning_tokens": "Reasoning Ratio",
+    "input_text_tokens": "Input Text Ratio",
+    "output_text_tokens": "Output Text Ratio",
+    "all": "All",
+    "extraRatios": "Extended Pricing",
+    "input": "Input",
+    "input_image_tokens": "Input Image Ratio",
+    "noExtraRatios": "No extended pricing",
+    "output": "Output",
+    "output_image_tokens": "Output Image Ratio",
+    "price": "Price",
+    "showAll": "Show All",
+    "onlyAvailable": "Only Available",
+    "modelPricing": "Model Pricing",
+    "unit": "Unit",
+    "modalityType": "Modality Type",
+    "allModality": "All",
+    "tags": "Tags",
+    "allTags": "All",
+    "modelInfo": "Model Information",
+    "contextLength": "Context Length",
+    "maxTokens": "Max Tokens",
+    "inputModality": "Input Modality",
+    "outputModality": "Output Modality",
+    "priceDetails": "Price Details",
+    "priceNote": "Different groups have different prices. Switch groups in token management.",
+    "otherInfo": "Other Information",
+    "totalModels": "Total {{count}} models",
+    "noModelsFound": "No matching models found",
+    "noModelsFoundTip": "Please try adjusting filters or search keywords",
+    "modelId": "Model ID",
+    "copyModelId": "Copy Model ID",
+    "billingMethod": "Billing Method",
+    "currentUserGroup": "Current User Group",
+    "viewDetail": "View Details",
+    "timeUnit": "Time"
   },
   "nova 映射": "nova mapping",
   "onyx 映射": "onyx mapping",
@@ -457,7 +703,8 @@
     "noPriceModelWarning": "There are models without configured prices, please configure the prices in time:",
     "refreshButton": "Refresh",
     "singleOperation": "Single Operation",
-    "updatePricesButton": "Update Prices"
+    "updatePricesButton": "Update Prices",
+    "title": "Model price"
   },
   "pricing_edit": {
     "channelType": "Channel type",
@@ -482,7 +729,18 @@
     "saveOk": "Saved successfully",
     "type": "type",
     "typeCheck": "The type can only be tokens or times",
-    "typeErr": "type error"
+    "typeErr": "type error",
+    "locked_title": "Lock price",
+    "locked": "Locked price",
+    "unlocked": "Unlocked price",
+    "lockedTip": "Price locked cannot be overridden by price updates on the server or program",
+    "completionRatio": "Completion ratio",
+    "delMultipleInfoTip": "Are you sure you want to delete the selected {{count}} prices?",
+    "extraRatios": "Extra expansion factor",
+    "noAvailableRatios": "No available extension ratio",
+    "noExtraRatios": "No additional magnification rate is available, please select to add from the drop-down menu.",
+    "promptRatio": "Leverage ratio",
+    "selectExtraRatio": "Select magnification ratio"
   },
   "profile": "Profile",
   "profilePage": {
@@ -504,6 +762,9 @@
     "password": "Password",
     "passwordMinLength": "Password must be at least 8 characters long",
     "personalInfo": "Personal Information",
+    "general": "General",
+    "binding": "Binding",
+    "webauthn": "WebAuthn",
     "resetToken": "Reset Access Token",
     "submit": "Submit",
     "telegramBot": "Telegram bot",
@@ -516,7 +777,31 @@
     "usernameMinLength": "Username must be at least 3 characters long",
     "usernameRequired": "Username cannot be empty",
     "wechatBindSuccess": "WeChat account successfully bound!",
-    "yourTokenIs": "Your access token is:"
+    "yourTokenIs": "Your access token is:",
+    "registerWebauthn": "Register WebAuthn Credential",
+    "webauthnManagement": "WebAuthn Credential Management",
+    "webauthnDescription": "WebAuthn provides passwordless authentication, allowing you to log in using biometric methods like fingerprints, Face ID, or security keys.",
+    "registeredCredentials": "Registered Credentials",
+    "alias": "Alias:",
+    "credentialId": "Credential ID:",
+    "registerTime": "Register Time:",
+    "delete": "Delete",
+    "noWebauthnCredentials": "No WebAuthn credentials found",
+    "confirmPassword": "Confirm Password",
+    "inputConfirmPasswordPlaceholder": "Please enter password again",
+    "passwordsNotMatch": "Passwords do not match",
+    "group": "Group",
+    "rate": "Rate",
+    "speed": "Speed",
+    "bound": "Bound",
+    "unbound": "Unbound",
+    "bind": "Bind",
+    "unbind": "Unbind",
+    "change": "Change",
+    "unbindSuccess": "Unbind successful",
+    "unbindConfirm": "Confirm Unbind",
+    "unbindWarning": "Are you sure you want to unbind? You will not be able to log in using this method after unbinding.",
+    "cancel": "Cancel"
   },
   "redemption": "Redemption",
   "redemptionPage": {
@@ -573,7 +858,7 @@
   "setting_index": {
     "operationSettings": {
       "chatLinkSettings": {
-        "info": "Configure chat links, which take effect in the chat of the token and in the chat of the Playground on the homepage. <br />In the link, &#123;key&#125; can replace the user's token, and &#123;server&#125; can replace the server address. For example: {'https://chat.oneapi.pro/#/?settings={\"key\":\"sk-{key}\",\"url\":\"{server}\"}'}<br />If not configured, the following 4 links will be configured by default:<br />ChatGPT Next ： {'https://chat.oneapi.pro/#/?settings={\"key\":\"{key}\",\"url\":\"{server}\"}'}<br />chatgpt-web-midjourney-proxy ： {'https://vercel.ddaiai.com/#/?settings={\"key\":\"{key}\",\"url\":\"{server}\"}'}<br />AMA ： {'ama://set-api-key?server={server}&key={key}'}<br />opencat ： {'opencat://team/join?domain={server}&token={key}'}<br />Sorting rules: The larger the value, the higher the ranking, and the same value is sorted according to the configuration order",
+        "info": "Configure chat links that take effect for chat in tokens and chat in Playground on the homepage. <br />In the links, you can use {key} to replace the user's token, {server} to replace the server address, and base64<[xxxxxx]> for base64 encoding. For example: {'https://chat.oneapi.pro/#/?settings={\"key\":\"sk-{key}\",\"url\":\"{server}\"}'}<br />If not configured, the following 4 links will be configured by default:<br />ChatGPT Next: {'https://chat.oneapi.pro/#/?settings={\"key\":\"{key}\",\"url\":\"{server}\"}'}<br />chatgpt-web-midjourney-proxy: {'https://vercel.ddaiai.com/#/?settings={\"key\":\"{key}\",\"url\":\"{server}\"}'}<br />AMA: {'ama://set-api-key?server={server}&key={key}'}<br />opencat: {'opencat://team/join?domain={server}&token={key}'}<br />Sort order: Higher values first, if values are equal then by configuration order",
         "save": "Save Chat Link Settings",
         "title": "Chat Link Settings"
       },
@@ -602,6 +887,10 @@
         "topUpLink": {
           "label": "Top-up Link",
           "placeholder": "For example, the purchase link of the card issuing website"
+        },
+        "retryTimeOut": {
+          "label": "Retry Timeout (seconds)",
+          "placeholder": "Retry Timeout (seconds)"
         }
       },
       "logSettings": {
@@ -640,7 +929,9 @@
         },
         "mjNotify": "Midjourney allows callbacks (will expose server IP address)",
         "saveButton": "Save Other Settings",
-        "title": "Other Settings"
+        "title": "Other Settings",
+        "claudeAPIEnabled": "Enable Claude API?",
+        "geminiAPIEnabled": "Enable Gemini API?"
       },
       "paymentSettings": {
         "alert": "Payment Settings: <br />1. USD Exchange Rate: Used to calculate the amount of recharge in USD <br />2. Minimum Recharge Amount (USD): Minimum recharge amount, in USD, enter an integer <br />3. All pages are calculated in USD, and the actual currency paid by the user is converted according to the currency set by the payment gateway <br />For example: A gateway sets the currency as CNY, the user pays 100 USD, then the actual payment amount is 100 * USD exchange rate <br />B gateway sets the currency as USD, the user pays 100 USD, then the actual payment amount is 100 USD",
@@ -689,10 +980,38 @@
         "title": "Rate Settings"
       },
       "title": "Operation Settings",
-      "audioTokenSettings": {
-        "info": "Configure audio rates. The configuration format is JSON, with keys as model names and values as input-output token rates. For example: {\"gpt-4o-audio-preview\": {\"input_audio_tokens_ratio\": 40, \"output_audio_tokens_ratio\": 20}, \"gpt-4o-mini-audio-preview\": {\"input_audio_tokens_ratio\": 67, \"output_audio_tokens_ratio\": 34}}",
-        "save": "Save audio token settings",
-        "title": "Audio token settings"
+      "extraTokenPriceJson": {
+        "info": "Configure extra token prices. The configuration format is JSON, with keys as model names and values as input-output token prices. For example: {\"gpt-4o-audio-preview\": {\"input_audio_tokens_ratio\": 40, \"output_audio_tokens_ratio\": 20}, \"gpt-4o-mini-audio-preview\": {\"input_audio_tokens_ratio\": 67, \"output_audio_tokens_ratio\": 34}}",
+        "save": "Save extra token price settings",
+        "title": "Extra token price settings"
+      },
+      "disableChannelKeywordsSettings": {
+        "info": "Disable channel keywords, one keyword per line.",
+        "save": "Save disabled channel keyword settings",
+        "title": "Disable channel keyword settings"
+      },
+      "safetySettings": {
+        "title": "System Safety Settings",
+        "enableSafe": "Enable Prompt Safety Check",
+        "safeToolName": {
+          "label": "Safe Check Tool"
+        },
+        "safeKeyWords": {
+          "label": "Keyword List",
+          "placeholder": "Enter keywords, one per line"
+        },
+        "save": "Save Settings"
+      },
+      "claudeSettings": {
+        "budgetTokensPercentage": {
+          "label": "Default thinking token percentage",
+          "placeholder": "Please enter the default thinking token percentage."
+        },
+        "defaultMaxTokens": {
+          "label": "Default MaxToken quantity",
+          "placeholder": "Please enter the default MaxToken quantity in JSON format, where \"default\" represents the default value. For example: {\"default\": 1000, \"claude-3-7-sonnet-latest\": 128000}"
+        },
+        "save": "Save Claude's settings"
       }
     },
     "otherSettings": {
@@ -860,7 +1179,8 @@
     "taskIdPlaceholder": "Task ID",
     "tokenName": "Token Name",
     "type": "Type",
-    "username": "Username"
+    "username": "Username",
+    "sourceIp": "Source IP"
   },
   "task": "Asynchronous tasks",
   "taskPage": {
@@ -874,7 +1194,8 @@
     "task": "Task ID",
     "time": "time consuming",
     "type": "type",
-    "user": "user"
+    "user": "user",
+    "title": "Asynchronous task"
   },
   "telegramPage": {
     "action": "Action",
@@ -935,9 +1256,42 @@
     "unlimited": "Unlimited",
     "unlimitedQuota": "Unlimited Quota",
     "usedQuota": "Used Quota",
-    "userGroup": "group",
+    "selectGroup": "Select group",
+    "selectGroupInfo": "Select the channel group you want to use here. When the channel group is unavailable, backup channels will be used",
+    "userGroup": "Group",
+    "userBackupGroup": "Backup group",
     "apiRate": "",
-    "apiRateTip": ""
+    "apiRateTip": "",
+    "heartbeat": "Heartbeat setting (Experimental)",
+    "heartbeatTip": "Heartbeat setting means that when you make a stream request, if there is no response for a long time, your client may disconnect due to the timeout mechanism. To prevent this, you can enable the heartbeat setting. When the request exceeds the start time you set and there is no response, we will send a heartbeat request every 5 seconds to keep the connection. Note: If you are using a relay program, please do not enable this setting, it may cause unexpected issues.",
+    "heartbeatTimeout": "Heartbeat start time (unit: seconds)",
+    "heartbeatTimeoutHelperText": "Minimum value: 30 seconds, maximum value: 90 seconds",
+    "limits": "Limits",
+    "limits_info": "After setting, you can impose restrictions on the token.",
+    "limits_models_switch": "Enable Models Limits",
+    "limit_models": "Model Limits",
+    "limit_models_info": "Select the models that this token is allowed to use. If no models are selected, all models are permitted.",
+    "limits_ip_whitelist": "IP Whitelist",
+    "limits_ip_whitelist_info": "Restrict token access to specific IP addresses or ranges",
+    "limits_ip_whitelist_switch": "Enable IP Whitelist",
+    "limits_ip_whitelist_input": "IP Addresses",
+    "limits_ip_whitelist_helper": "Enter one IP address or CIDR range per line (e.g., 192.168.1.1 or 10.0.0.0/8)",
+    "billingTag": "Billing Tag",
+    "billingTagInfo": "Used for billing statistics by group, only admins can set this",
+    "billingTagLabel": "Billing Tag",
+    "billingTagHelper": "Select a group as billing tag for tracking token costs by group",
+    "adminSearch": "Admin Search",
+    "adminSearchDesc": "Search all users' tokens by User ID or Token ID",
+    "userId": "User ID",
+    "userIdPlaceholder": "Enter user ID",
+    "tokenId": "Token ID",
+    "tokenIdPlaceholder": "Enter token ID",
+    "clearSearch": "Clear",
+    "owner": "Owner",
+    "adminEditWarning": "You are editing this token as an administrator, you can change the token owner",
+    "transferToUser": "Owner User ID",
+    "transferToUserHelper": "Change user ID to transfer token ownership",
+    "accessedTime": "Last Used"
   },
   "topup": "Top-up",
   "topupCard": {
@@ -983,6 +1337,12 @@
     "name": "Name",
     "nameTip": "Name for users",
     "public": "Is it public?",
+    "promotion": "Auto Upgrade",
+    "promotionTip": "When enabled, users will automatically upgrade to this group when their recharge amount meets the min-max conditions.",
+    "min": "Min Amount",
+    "minTip": "Minimum recharge amount required for auto upgrade.",
+    "max": "Max Amount",
+    "maxTip": "Maximum recharge amount for this group level.",
     "ratio": "magnification",
     "symbol": "Identification",
     "symbolTip": "The label is used to distinguish user groups, please use English and do not repeat.",
@@ -993,10 +1353,14 @@
     "adminUserRole": "administrator",
     "bind": "Bind",
     "cUserRole": "general user",
+    "reliableUserRole": "reliable internal staff",
+    "setReliable": "Set as reliable staff",
     "cancel": "Cancel",
     "cancelAdmin": "Cancel administrator",
     "createUser": "Create User",
     "creationTime": "Creation Time",
+    "lastLoginTime": "Last Login Time",
+    "lastLoginIP": "Last Login IP",
     "del": "delete users",
     "delTip": "Whether to delete the user",
     "displayName": "Display Name",
@@ -1012,6 +1376,7 @@
     "refresh": "Refresh",
     "saveSuccess": "Saved successfully!",
     "searchPlaceholder": "Search for user ID, username, group, display name, or email address...",
+    "setCommonUser": "Set as common user",
     "setAdmin": "Set as administrator",
     "statistics": "Statistics",
     "status": "Status",
@@ -1049,7 +1414,6 @@
   "使用代码执行功能，开启后，计算tokens不准确，建议个人使用开启": "When using the code execution function, the calculation of tokens is inaccurate after it is turned on. It is recommended that individuals use it to turn it on.",
   "使用网页搜索功能，对用户输入的内容进行搜索": "Use the web search function to search for content entered by the user",
   "其他参数": "Other parameters",
-  "单独设置代理地址，支持http和socks5，例如：http://127.0.0.1:1080": "Set the proxy address separately, support http and socks5, for example: http://127.0.0.1:1080",
   "可空，请输入中转API地址，例如通过cloudflare中转": "Can be left empty, please enter the transfer API address, for example, through cloudflare transfer",
   "启用": "enable",
   "地址填写Suno-API部署的地址": "Address: Fill in the address of Suno-API deployment",
@@ -1080,7 +1444,6 @@
   "模型名称为coze-{bot_id}，你也可以直接使用 coze-* 通配符来匹配所有coze开头的模型": "The model name is coze-{bot_id}. You can also directly use coze-* wildcards to match all models starting with coze.",
   "模型名称映射， 你可以取一个容易记忆的名字来代替coze-{bot_id}，例如：{\"coze-translate\": \"coze-xxxxx\"},注意：如果使用了模型映射，那么上面的模型名称必须使用映射前的名称，上述例子中，你应该在模型中填入coze-translate(如果已经使用了coze-*，可以忽略)。": "Model name mapping, you can replace coze-{bot_id} with an easy-to-remember name, for example: {\"coze-translate\": \"coze-xxxxx\"}. Note: If model mapping is used, the above model name must \nUse the name before mapping. In the above example, you should fill in coze-translate in the model (you can ignore it if coze-* is already used).",
   "模型映射关系": "Model mapping relationship",
-  "模型映射关系：例如用户请求A模型，实际转发给渠道的模型为B。": "Model mapping relationship: for example, when user requests model A, the actual model forwarded to the channel is model B.",
   "测速模型": "speed model",
   "渠道API地址": "Channel API address",
   "渠道名称": "Channel name",
@@ -1130,5 +1493,86 @@
     "nameTip": "Channel Name",
     "title": "Model Ownership"
   },
-  "price": "Price"
+  "price": "Price",
+  "模型映射关系：例如用户请求A模型，实际转发给渠道的模型为B。在B模型加前缀+，表示使用传入模型计费，例如：+gpt-3": {
+    "5-turbo": "Model mapping relationship: For example, when a user requests Model A, the actual model forwarded to the channel is Model B. Adding a prefix \"+\" to Model B indicates using the incoming model for billing purposes, for example: +gpt-3.5-turbo"
+  },
+  "单独设置代理地址，支持http和socks5，例如：http://127[0][0]": {
+    "1:1080,代理地址中可以通过 `%s` 作为会话标识占位符，程序中检测到有占位符会根据Key生成唯一会话标识符进行替换": "Set the proxy address separately, supporting both http and socks5, for example: http://127.0.0.1:1080. You can use `%s` as a session identifier placeholder in the proxy address. When a placeholder is detected in the program, it will be replaced with a unique session identifier generated based on the Key."
+  },
+  "请输入版本号，例如：v3[__i18n_ally_root__]": {
+    "1": "",
+    "__i18n_ally_root__": {
+      "1": ""
+    }
+  },
+  "请选择该渠道所支持的模型,你也可以输入通配符*来匹配模型，例如：gpt-3": {
+    "__i18n_ally_root__": {
+      "5*，表示支持所有gpt-3": {
+        "5开头的模型，*号只能在最后一位使用，前面必须有字符，例如：gpt-3": {
+          "5*是正确的，*gpt-3": {
+            "5是错误的": ""
+          }
+        }
+      },
+      "__i18n_ally_root__": {
+        "__i18n_ally_root__": {
+          "5*，表示支持所有gpt-3": {
+            "5开头的模型，*号只能在最后一位使用，前面必须有字符，例如：gpt-3": {
+              "5*是正确的，*gpt-3": {
+                "5是错误的": ""
+              }
+            }
+          },
+          "__i18n_ally_root__": {
+            "__i18n_ally_root__": {
+              "5*，表示支持所有gpt-3": {
+                "5开头的模型，*号只能在最后一位使用，前面必须有字符，例如：gpt-3": {
+                  "5*是正确的，*gpt-3": {
+                    "5是错误的": ""
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "输入后，会替换请求地址中的v1，例如：freeapi，则请求chat时会变成https://xxx": {
+    "__i18n_ally_root__": {
+      "com/freeapi/chat/completions,如果需要禁用版本号，请输入 disable": "",
+      "__i18n_ally_root__": {
+        "__i18n_ally_root__": {
+          "com/freeapi/chat/completions,如果需要禁用版本号，请输入 disable": "",
+          "__i18n_ally_root__": {
+            "__i18n_ally_root__": {
+              "com/freeapi/chat/completions,如果需要禁用版本号，请输入 disable": ""
+            }
+          }
+        }
+      }
+    }
+  },
+  "用于测试使用的模型，为空时无法测速,如：gpt-3": {
+    "__i18n_ally_root__": {
+      "5-turbo，仅支持chat模型": ""
+    }
+  },
+  "禁用流式的模型": "Disable the streaming model",
+  "请参考wiki中的文档获取key": {
+    "__i18n_ally_root__": {
+      " https://github": {
+        "com/MartialBE/one-hub/wiki/VertexAI": ""
+      }
+    }
+  },
+  "请输入你部署的Ollama地址，例如：http://127[__i18n_ally_root__]": {
+    "0": {
+      "0": {
+        "1:11434，如果你使用了cloudflare Zero Trust，可以在下方插件填入授权信息": ""
+      }
+    }
+  },
+  "这里填写禁用流式的模型，注意：如果填写了禁用流式的模型，那么这些模型在流式请求时会跳过该渠道": "Fill in here to disable the streaming model. Note: If you fill in to disable the streaming model, these models will be skipped for streaming requests on that channel."
 }

@@ -2,21 +2,28 @@ package router
 
 import (
 	"embed"
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"one-api/controller"
 	"one-api/middleware"
 	"strings"
-
-	"github.com/gin-contrib/gzip"
-	"github.com/gin-contrib/static"
-	"github.com/gin-gonic/gin"
 )
 
 func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
-	router.Use(static.Serve("/", static.EmbedFolder(buildFS, "web/build")))
+	// 特别处理favicon.ico请求
+	router.GET("/favicon.ico", controller.Favicon(buildFS))
+
+	embedFS, err := static.EmbedFolder(buildFS, "web/build")
+	if err != nil {
+		panic("加载嵌入式资源失败")
+	}
+	router.Use(static.Serve("/", embedFS))
+
 	router.NoRoute(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.RequestURI, "/v1") || strings.HasPrefix(c.Request.RequestURI, "/api") {
 			controller.RelayNotFound(c)

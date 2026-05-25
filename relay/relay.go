@@ -62,14 +62,16 @@ func RelayOnly(c *gin.Context) {
 
 	response, errWithCode := requester.SendRequestRaw(req)
 	if errWithCode != nil {
-		relayResponseWithErr(c, errWithCode)
+		newErrWithCode := FilterOpenAIErr(c, errWithCode)
+		relayResponseWithOpenAIErr(c, &newErrWithCode)
 		return
 	}
 
 	errWithCode = responseMultipart(c, response)
 
 	if errWithCode != nil {
-		relayResponseWithErr(c, errWithCode)
+		newErrWithCode := FilterOpenAIErr(c, errWithCode)
+		relayResponseWithOpenAIErr(c, &newErrWithCode)
 		return
 	}
 
@@ -81,6 +83,6 @@ func RelayOnly(c *gin.Context) {
 			requestTime = int(time.Since(requestStartTime).Milliseconds())
 		}
 	}
-	model.RecordConsumeLog(c.Request.Context(), c.GetInt("id"), c.GetInt("channel_id"), 0, 0, "", c.GetString("token_name"), 0, "中继:"+path, requestTime, false, nil)
+	model.RecordConsumeLog(c.Request.Context(), c.GetInt("id"), c.GetInt("channel_id"), 0, 0, "", c.GetString("token_name"), 0, "中继:"+path, requestTime, false, nil, c.ClientIP())
 
 }

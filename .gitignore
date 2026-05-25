@@ -1,5 +1,6 @@
 .idea
 .vscode
+.cursor
 upload
 *.exe
 *.db
@@ -16,3 +17,4 @@ dist
 test.yaml
 one-api
 _output
+.claude

@@ -16,8 +16,9 @@ import KeywordTableHead from 'ui-component/TableHead';
 import TableToolBar from './component/TableToolBar';
 import EditeModal from './component/EditModal';
 import { API } from 'utils/api';
-import { ITEMS_PER_PAGE } from 'constants';
+import { PAGE_SIZE_OPTIONS, getPageSize, savePageSize } from 'constants';
 import { Icon } from '@iconify/react';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 
 export default function Gateway() {
   const { t } = useTranslation();
@@ -33,7 +34,7 @@ export default function Gateway() {
   const [page, setPage] = useState(0);
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('created_at');
-  const [rowsPerPage, setRowsPerPage] = useState(ITEMS_PER_PAGE);
+  const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('paymentGateway'));
   const [listCount, setListCount] = useState(0);
   const [searching, setSearching] = useState(false);
   const [toolBarValue, setToolBarValue] = useState(originalKeyword);
@@ -74,8 +75,10 @@ export default function Gateway() {
   };
 
   const handleChangeRowsPerPage = (event) => {
+    const newRowsPerPage = parseInt(event.target.value, 10);
     setPage(0);
-    setRowsPerPage(parseInt(event.target.value, 10));
+    setRowsPerPage(newRowsPerPage);
+    savePageSize('paymentGateway', newRowsPerPage);
   };
 
   const search = async () => {
@@ -203,90 +206,92 @@ export default function Gateway() {
           </Container>
         </Toolbar>
         {searching && <LinearProgress />}
-        <TableContainer sx={{ overflow: 'unset' }}>
-          <Table sx={{ minWidth: 800 }}>
-            <KeywordTableHead
-              order={order}
-              orderBy={orderBy}
-              onRequestSort={handleSort}
-              headLabel={[
-                {
-                  id: 'id',
-                  label: t('paymentGatewayPage.tableHeaders.id'),
-                  disableSort: false
-                },
-                {
-                  id: 'uuid',
-                  label: t('paymentGatewayPage.tableHeaders.uuid'),
-                  disableSort: false
-                },
-                {
-                  id: 'name',
-                  label: t('paymentGatewayPage.tableHeaders.name'),
-                  disableSort: true
-                },
-                {
-                  id: 'type',
-                  label: t('paymentGatewayPage.tableHeaders.type'),
-                  disableSort: false
-                },
-                {
-                  id: 'icon',
-                  label: t('paymentGatewayPage.tableHeaders.icon'),
-                  disableSort: true
-                },
-                {
-                  id: 'fixed_fee',
-                  label: t('paymentGatewayPage.tableHeaders.fixedFee'),
-                  disableSort: true
-                },
-                {
-                  id: 'percent_fee',
-                  label: t('paymentGatewayPage.tableHeaders.percentFee'),
-                  disableSort: true
-                },
-                {
-                  id: 'sort',
-                  label: t('paymentGatewayPage.tableHeaders.sort'),
-                  disableSort: false
-                },
-                {
-                  id: 'enable',
-                  label: t('paymentGatewayPage.tableHeaders.enable'),
-                  disableSort: false
-                },
-                {
-                  id: 'created_at',
-                  label: t('paymentGatewayPage.tableHeaders.createdAt'),
-                  disableSort: false
-                },
-                {
-                  id: 'action',
-                  label: t('paymentGatewayPage.tableHeaders.action'),
-                  disableSort: true
-                }
-              ]}
-            />
-            <TableBody>
-              {payment.map((row, index) => (
-                <PaymentTableRow
-                  item={row}
-                  key={`${row.id}_${index}`}
-                  managePayment={managePayment}
-                  handleOpenModal={handleOpenModal}
-                  setModalPaymentId={setEditPaymentId}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <PerfectScrollbar component="div">
+          <TableContainer sx={{ overflow: 'unset' }}>
+            <Table sx={{ minWidth: 800 }}>
+              <KeywordTableHead
+                order={order}
+                orderBy={orderBy}
+                onRequestSort={handleSort}
+                headLabel={[
+                  {
+                    id: 'id',
+                    label: t('paymentGatewayPage.tableHeaders.id'),
+                    disableSort: false
+                  },
+                  {
+                    id: 'uuid',
+                    label: t('paymentGatewayPage.tableHeaders.uuid'),
+                    disableSort: false
+                  },
+                  {
+                    id: 'name',
+                    label: t('paymentGatewayPage.tableHeaders.name'),
+                    disableSort: true
+                  },
+                  {
+                    id: 'type',
+                    label: t('paymentGatewayPage.tableHeaders.type'),
+                    disableSort: false
+                  },
+                  {
+                    id: 'icon',
+                    label: t('paymentGatewayPage.tableHeaders.icon'),
+                    disableSort: true
+                  },
+                  {
+                    id: 'fixed_fee',
+                    label: t('paymentGatewayPage.tableHeaders.fixedFee'),
+                    disableSort: true
+                  },
+                  {
+                    id: 'percent_fee',
+                    label: t('paymentGatewayPage.tableHeaders.percentFee'),
+                    disableSort: true
+                  },
+                  {
+                    id: 'sort',
+                    label: t('paymentGatewayPage.tableHeaders.sort'),
+                    disableSort: false
+                  },
+                  {
+                    id: 'enable',
+                    label: t('paymentGatewayPage.tableHeaders.enable'),
+                    disableSort: false
+                  },
+                  {
+                    id: 'created_at',
+                    label: t('paymentGatewayPage.tableHeaders.createdAt'),
+                    disableSort: false
+                  },
+                  {
+                    id: 'action',
+                    label: t('paymentGatewayPage.tableHeaders.action'),
+                    disableSort: true
+                  }
+                ]}
+              />
+              <TableBody>
+                {payment.map((row, index) => (
+                  <PaymentTableRow
+                    item={row}
+                    key={`${row.id}_${index}`}
+                    managePayment={managePayment}
+                    handleOpenModal={handleOpenModal}
+                    setModalPaymentId={setEditPaymentId}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </PerfectScrollbar>
         <TablePagination
           page={page}
           component="div"
           count={listCount}
           rowsPerPage={rowsPerPage}
           onPageChange={handleChangePage}
-          rowsPerPageOptions={[10, 25, 30]}
+          rowsPerPageOptions={PAGE_SIZE_OPTIONS}
           onRowsPerPageChange={handleChangeRowsPerPage}
           showFirstButton
           showLastButton

@@ -1,84 +1,94 @@
 import PropTypes from 'prop-types';
-import { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
-import { Box, ButtonBase } from '@mui/material';
+import { Box, IconButton, Stack, useMediaQuery } from '@mui/material';
 
 // project imports
 import LogoSection from '../LogoSection';
-import ProfileSection from './ProfileSection';
+import Profile from './Profile';
 import ThemeButton from 'ui-component/ThemeButton';
 import I18nButton from 'ui-component/i18nButton';
 import { NoticeButton } from 'ui-component/notice';
-
-// assets
-// import { Icon } from '@iconify/react';
+import { drawerWidth, miniDrawerWidth } from 'store/constant';
 
 // ==============================|| MAIN NAVBAR / HEADER ||============================== //
 
-const Header = ({ handleLeftDrawerToggle }) => {
+const Header = ({ handleLeftDrawerToggle, toggleProfileDrawer }) => {
   const theme = useTheme();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(true);
+  const matchUpMd = useMediaQuery(theme.breakpoints.up('md'));
+  const location = useLocation();
+  const isConsoleRoute = location.pathname.startsWith('/panel');
+  const leftDrawerOpened = useSelector((state) => state.customization.opened);
 
   return (
     <>
-      {/* logo & toggler button */}
       <Box
         sx={{
-          width: 228,
           display: 'flex',
+          alignItems: 'center',
+          ...(matchUpMd && {
+            width: `${leftDrawerOpened ? drawerWidth : miniDrawerWidth}px`,
+            ml: leftDrawerOpened ? 0 : -3,
+            transition: 'width 200ms cubic-bezier(0.4, 0, 0.2, 1), margin 200ms cubic-bezier(0.4, 0, 0.2, 1)'
+          }),
           [theme.breakpoints.down('md')]: {
             width: 'auto'
           }
         }}
       >
-        <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, flexGrow: 1 }}>
-          <LogoSection />
-        </Box>
-        <ButtonBase
+        <Box
+          component="span"
           sx={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            display: 'flex',
+            display: { xs: 'none', md: 'flex' },
             alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
-            }
-          }}
-          onClick={() => {
-            setIsDrawerOpen(!isDrawerOpen);
-            handleLeftDrawerToggle();
+            justifyContent: leftDrawerOpened ? 'flex-start' : 'center',
+            width: '100%',
+            overflow: 'visible',
+            transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)'
           }}
         >
-          <Icon
-            icon={isDrawerOpen ? 'material-symbols:menu-open' : 'material-symbols:menu'}
-            width="20px"
-            color={theme.palette.mode === 'dark' ? '#ffffff' : '#000000'}
-            style={{
-              opacity: theme.palette.mode === 'dark' ? 0.9 : 0.7,
-              transition: 'transform 0.2s ease-in-out'
+          <LogoSection isMini={!leftDrawerOpened} />
+        </Box>
+        {!matchUpMd && (
+          <IconButton
+            size="medium"
+            edge="start"
+            color="inherit"
+            onClick={handleLeftDrawerToggle}
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: '8px',
+              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+              '&:hover': {
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'
+              }
             }}
-          />
-        </ButtonBase>
+          >
+            <Icon icon="solar:hamburger-menu-linear" width={22} height={22} />
+          </IconButton>
+        )}
       </Box>
 
       <Box sx={{ flexGrow: 1 }} />
-      <Box sx={{ flexGrow: 1 }} />
-      <NoticeButton />
-      <ThemeButton />
-      <I18nButton />
-      <ProfileSection />
+
+      <Stack direction="row" spacing={1} alignItems="center">
+        <NoticeButton />
+        <ThemeButton />
+        <I18nButton />
+        {isConsoleRoute && <Profile toggleProfileDrawer={toggleProfileDrawer} />}
+      </Stack>
     </>
   );
 };
 
 Header.propTypes = {
-  handleLeftDrawerToggle: PropTypes.func
+  handleLeftDrawerToggle: PropTypes.func,
+  toggleProfileDrawer: PropTypes.func
 };
 
 export default Header;

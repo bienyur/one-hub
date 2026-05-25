@@ -7,10 +7,13 @@ import (
 	"math"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/common/requester"
 	"one-api/common/utils"
 	providersBase "one-api/providers/base"
+	"one-api/safty"
 	"one-api/types"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +42,7 @@ func (r *relayCompletions) setRequest() error {
 		return errors.New("the 'stream_options' parameter is only allowed when 'stream' is enabled")
 	}
 
-	r.originalModel = r.request.Model
+	r.setOriginalModel(r.request.Model)
 
 	return nil
 }
@@ -66,6 +69,18 @@ func (r *relayCompletions) send() (err *types.OpenAIErrorWithStatusCode, done bo
 
 	r.request.Model = r.modelName
 
+	// 内容审查
+	if config.EnableSafe {
+		if r.request.Prompt != nil {
+			CheckResult, _ := safty.CheckContent(r.request.Prompt)
+			if !CheckResult.IsSafe {
+				err = common.StringErrorWrapperLocal(CheckResult.Reason, CheckResult.Code, http.StatusBadRequest)
+				done = true
+				return
+			}
+		}
+	}
+
 	if r.request.Stream {
 		var response requester.StreamReaderInterface[string]
 		response, err = provider.CreateCompletionStream(&r.request)
@@ -77,7 +92,9 @@ func (r *relayCompletions) send() (err *types.OpenAIErrorWithStatusCode, done bo
 			return r.getUsageResponse()
 		}
 
-		err = responseStreamClient(r.c, response, doneStr)
+		var firstResponseTime time.Time
+		firstResponseTime, err = responseStreamClient(r.c, response, doneStr)
+		r.SetFirstResponseTime(firstResponseTime)
 	} else {
 		var response *types.CompletionResponse
 		response, err = provider.CreateCompletion(&r.request)

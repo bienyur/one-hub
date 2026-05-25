@@ -13,8 +13,14 @@ import (
 func SetApiRouter(router *gin.Engine) {
 	apiRouter := router.Group("/api")
 	apiRouter.GET("/metrics", middleware.MetricsWithBasicAuth(), gin.WrapH(promhttp.Handler()))
-
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
+
+	systemInfo := apiRouter.Group("/system_info")
+	systemInfo.Use(middleware.RootAuth())
+	{
+		systemInfo.POST("/log", controller.SystemLog)
+	}
+
 	apiRouter.POST("/telegram/:token", middleware.Telegram(), controller.TelegramBotWebHook)
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
 	{
@@ -40,6 +46,21 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/oauth/endpoint", middleware.CriticalRateLimit(), controller.OIDCEndpoint)
 		apiRouter.GET("/oauth/oidc", middleware.CriticalRateLimit(), controller.OIDCAuth)
 
+		webauthnGroup := apiRouter.Group("/webauthn")
+		{
+			// 注册相关
+			webauthnGroup.POST("/registration/begin", middleware.UserAuth(), controller.WebauthnBeginRegistration)
+			webauthnGroup.POST("/registration/finish", middleware.UserAuth(), controller.WebauthnFinishRegistration)
+
+			// 登录相关
+			webauthnGroup.POST("/login/begin", middleware.CriticalRateLimit(), controller.WebauthnBeginLogin)
+			webauthnGroup.POST("/login/finish", middleware.CriticalRateLimit(), controller.WebauthnFinishLogin)
+
+			// 凭据管理
+			webauthnGroup.GET("/credentials", middleware.UserAuth(), controller.GetUserWebAuthnCredentials)
+			webauthnGroup.DELETE("/credentials/:id", middleware.UserAuth(), controller.DeleteWebAuthnCredential)
+		}
+
 		apiRouter.Any("/payment/notify/:uuid", controller.PaymentCallback)
 
 		userRoute := apiRouter.Group("/user")
@@ -52,8 +73,14 @@ func SetApiRouter(router *gin.Engine) {
 			selfRoute.Use(middleware.UserAuth())
 			{
 				selfRoute.GET("/dashboard", controller.GetUserDashboard)
+				selfRoute.GET("/dashboard/rate", controller.GetRateRealtime)
+				selfRoute.GET("/dashboard/uptimekuma/status-page", controller.UptimeKumaStatusPage)
+				selfRoute.GET("/dashboard/uptimekuma/status-page/heartbeat", controller.UptimeKumaStatusPageHeartbeat)
+				selfRoute.GET("/invoice", controller.GetUserInvoice)
+				selfRoute.GET("/invoice/detail", controller.GetUserInvoiceDetail)
 				selfRoute.GET("/self", controller.GetSelf)
 				selfRoute.PUT("/self", controller.UpdateSelf)
+				selfRoute.POST("/unbind", controller.Unbind)
 				// selfRoute.DELETE("/self", controller.DeleteSelf)
 				selfRoute.GET("/token", controller.GenerateAccessToken)
 				selfRoute.GET("/aff", controller.GetAffCode)
@@ -86,6 +113,10 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.PUT("/telegram/reload", controller.ReloadTelegramBot)
 			optionRoute.GET("/telegram/:id", controller.GetTelegramMenu)
 			optionRoute.DELETE("/telegram/:id", controller.DeleteTelegramMenu)
+			optionRoute.GET("/safe_tools", controller.GetSafeTools)
+			optionRoute.POST("/invoice/gen/:time", controller.GenInvoice)
+			optionRoute.POST("/invoice/update/:time", controller.UpdateInvoice)
+			optionRoute.POST("/system_info/log", controller.SystemLog)
 		}
 
 		modelOwnedByRoute := apiRouter.Group("/model_ownedby")
@@ -96,6 +127,16 @@ func SetApiRouter(router *gin.Engine) {
 			modelOwnedByRoute.POST("/", controller.CreateModelOwnedBy)
 			modelOwnedByRoute.PUT("/", controller.UpdateModelOwnedBy)
 			modelOwnedByRoute.DELETE("/:id", controller.DeleteModelOwnedBy)
+		}
+
+		modelInfoRoute := apiRouter.Group("/model_info")
+		modelInfoRoute.GET("/", controller.GetAllModelInfo)
+		modelInfoRoute.Use(middleware.AdminAuth())
+		{
+			modelInfoRoute.GET("/:id", controller.GetModelInfo)
+			modelInfoRoute.POST("/", controller.CreateModelInfo)
+			modelInfoRoute.PUT("/", controller.UpdateModelInfo)
+			modelInfoRoute.DELETE("/:id", controller.DeleteModelInfo)
 		}
 
 		userGroup := apiRouter.Group("/user_group")
@@ -127,15 +168,19 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.DELETE("/disabled", controller.DeleteDisabledChannel)
 			channelRoute.DELETE("/:id/tag", controller.DeleteChannelTag)
 			channelRoute.DELETE("/:id", controller.DeleteChannel)
+			channelRoute.DELETE("/batch", controller.BatchDeleteChannel)
 		}
 		channelTagRoute := apiRouter.Group("/channel_tag")
 		channelTagRoute.Use(middleware.AdminAuth())
 		{
 			channelTagRoute.GET("/_all", controller.GetChannelsTagAllList)
-			channelTagRoute.GET("/", controller.GetChannelsTagList)
+			channelTagRoute.GET("/:tag/list", controller.GetChannelsTagList)
 			channelTagRoute.GET("/:tag", controller.GetChannelsTag)
 			channelTagRoute.PUT("/:tag", controller.UpdateChannelsTag)
 			channelTagRoute.DELETE("/:tag", controller.DeleteChannelsTag)
+			channelTagRoute.DELETE("/:tag/disabled", controller.DeleteDisabledChannelsTag)
+			channelTagRoute.PUT("/:tag/priority", controller.UpdateChannelsTagPriority)
+			channelTagRoute.PUT("/:tag/status/:status", controller.ChangeChannelsTagStatus)
 
 		}
 
@@ -148,6 +193,12 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.POST("/", controller.AddToken)
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
+		}
+		tokenAdminRoute := apiRouter.Group("/token")
+		tokenAdminRoute.Use(middleware.AdminAuth())
+		{
+			tokenAdminRoute.GET("/admin/search", controller.GetTokensListByAdmin)
+			tokenAdminRoute.PUT("/admin", controller.UpdateTokenByAdmin)
 		}
 		redemptionRoute := apiRouter.Group("/redemption")
 		redemptionRoute.Use(middleware.AdminAuth())
@@ -177,8 +228,9 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			analyticsRoute.GET("/statistics", controller.GetStatisticsDetail)
 			analyticsRoute.GET("/period", controller.GetStatisticsByPeriod)
+			analyticsRoute.GET("/multi_user_stats", controller.GetMultiUserStatistics)
+			analyticsRoute.GET("/multi_user_stats/export", controller.ExportMultiUserStatisticsCSV)
 		}
-
 		pricesRoute := apiRouter.Group("/prices")
 		pricesRoute.Use(middleware.AdminAuth())
 		{
@@ -189,6 +241,7 @@ func SetApiRouter(router *gin.Engine) {
 			pricesRoute.POST("/multiple", controller.BatchSetPrices)
 			pricesRoute.PUT("/multiple/delete", controller.BatchDeletePrices)
 			pricesRoute.POST("/sync", controller.SyncPricing)
+			pricesRoute.GET("/updateService", controller.GetUpdatePriceService)
 
 		}
 

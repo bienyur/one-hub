@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { showError, trims } from 'utils/common';
 
 import Table from '@mui/material/Table';
@@ -9,21 +9,26 @@ import TablePagination from '@mui/material/TablePagination';
 import LinearProgress from '@mui/material/LinearProgress';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
-
-import { Button, Card, Stack, Container, Typography, Box } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import Divider from '@mui/material/Divider';
+import { Button, Card, Stack, Container, Typography, Box, Menu, MenuItem, Checkbox, ListItemText, Tabs, Tab } from '@mui/material';
 import LogTableRow from './component/TableRow';
 import KeywordTableHead from 'ui-component/TableHead';
 import TableToolBar from './component/TableToolBar';
 import { API } from 'utils/api';
-import { isAdmin } from 'utils/common';
-import { ITEMS_PER_PAGE } from 'constants';
+import { useIsAdmin } from 'utils/common';
+import { PAGE_SIZE_OPTIONS, getPageSize, savePageSize } from 'constants';
 import { Icon } from '@iconify/react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { UserContext } from 'contexts/UserContext';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
+import { useSelector } from 'react-redux';
+import { useLogType } from './type/LogType';
 
 export default function Log() {
   const { t } = useTranslation();
+  const LogType = useLogType();
   const originalKeyword = {
     p: 0,
     username: '',
@@ -31,23 +36,74 @@ export default function Log() {
     model_name: '',
     start_timestamp: 0,
     end_timestamp: dayjs().unix() + 3600,
-    log_type: 0,
-    channel_id: ''
+    log_type: '0',
+    channel_id: '',
+    source_ip: ''
   };
 
   const [page, setPage] = useState(0);
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('created_at');
-  const [rowsPerPage, setRowsPerPage] = useState(ITEMS_PER_PAGE);
+  const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('log'));
   const [listCount, setListCount] = useState(0);
   const [searching, setSearching] = useState(false);
   const [toolBarValue, setToolBarValue] = useState(originalKeyword);
   const [searchKeyword, setSearchKeyword] = useState(originalKeyword);
   const [refreshFlag, setRefreshFlag] = useState(false);
-  const { userGroup } = useContext(UserContext);
+  const { userGroup } = useSelector((state) => state.account);
+  const theme = useTheme();
+  const matchUpMd = useMediaQuery(theme.breakpoints.up('sm'));
 
   const [logs, setLogs] = useState([]);
-  const userIsAdmin = isAdmin();
+  const userIsAdmin = useIsAdmin();
+
+  // 添加列显示设置相关状态
+  const [columnVisibility, setColumnVisibility] = useState({
+    created_at: true,
+    channel_id: true,
+    user_id: true,
+    group: true,
+    token_name: true,
+    type: true,
+    model_name: true,
+    duration: true,
+    message: true,
+    completion: true,
+    quota: true,
+    source_ip: true,
+    detail: true
+  });
+  const [columnMenuAnchor, setColumnMenuAnchor] = useState(null);
+
+  // 处理列显示菜单打开和关闭
+  const handleColumnMenuOpen = (event) => {
+    setColumnMenuAnchor(event.currentTarget);
+  };
+
+  const handleColumnMenuClose = () => {
+    setColumnMenuAnchor(null);
+  };
+
+  // 处理列显示状态变更
+  const handleColumnVisibilityChange = (columnId) => {
+    setColumnVisibility({
+      ...columnVisibility,
+      [columnId]: !columnVisibility[columnId]
+    });
+  };
+
+  // 处理全选/取消全选列显示
+  const handleSelectAllColumns = () => {
+    const allColumns = Object.keys(columnVisibility);
+    const areAllVisible = allColumns.every((column) => columnVisibility[column]);
+
+    const newColumnVisibility = {};
+    allColumns.forEach((column) => {
+      newColumnVisibility[column] = !areAllVisible;
+    });
+
+    setColumnVisibility(newColumnVisibility);
+  };
 
   const handleSort = (event, id) => {
     const isAsc = orderBy === id && order === 'asc';
@@ -62,8 +118,10 @@ export default function Log() {
   };
 
   const handleChangeRowsPerPage = (event) => {
+    const newRowsPerPage = parseInt(event.target.value, 10);
     setPage(0);
-    setRowsPerPage(parseInt(event.target.value, 10));
+    setRowsPerPage(newRowsPerPage);
+    savePageSize('log', newRowsPerPage);
   };
 
   const searchLogs = async () => {
@@ -73,6 +131,13 @@ export default function Log() {
 
   const handleToolBarValue = (event) => {
     setToolBarValue({ ...toolBarValue, [event.target.name]: event.target.value });
+  };
+
+  const handleTabsChange = async (event, newValue) => {
+    const updatedToolBarValue = { ...toolBarValue, log_type: newValue };
+    setToolBarValue(updatedToolBarValue);
+    setPage(0);
+    setSearchKeyword(updatedToolBarValue);
   };
 
   const fetchData = useCallback(
@@ -128,9 +193,33 @@ export default function Log() {
   return (
     <>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-        <Typography variant="h4">{t('logPage.title')}</Typography>
+        <Stack direction="column" spacing={1}>
+          <Typography variant="h2">{t('logPage.title')}</Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Log
+          </Typography>
+        </Stack>
       </Stack>
       <Card>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={toolBarValue.log_type}
+            onChange={handleTabsChange}
+            aria-label="basic tabs example"
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{
+              '& .MuiTabs-indicator': {
+                display: 'none'
+              }
+            }}
+          >
+            {Object.values(LogType).map((option) => {
+              return <Tab key={option.value} label={option.text} value={option.value} />;
+            })}
+          </Tabs>
+        </Box>
         <Box component="form" noValidate>
           <TableToolBar filterName={toolBarValue} handleFilterName={handleToolBarValue} userIsAdmin={userIsAdmin} />
         </Box>
@@ -143,16 +232,90 @@ export default function Log() {
             p: (theme) => theme.spacing(0, 1, 0, 3)
           }}
         >
-          <Container>
-            <ButtonGroup variant="outlined" aria-label="outlined small primary button group">
-              <Button onClick={handleRefresh} startIcon={<Icon icon="solar:refresh-bold-duotone" width={18} />}>
-                {t('logPage.refreshButton')}
-              </Button>
+          <Container maxWidth="xl">
+            {matchUpMd ? (
+              <ButtonGroup variant="outlined" aria-label="outlined small primary button group">
+                <Button onClick={handleRefresh} size="small" startIcon={<Icon icon="solar:refresh-bold-duotone" width={18} />}>
+                  {t('logPage.refreshButton')}
+                </Button>
 
-              <Button onClick={searchLogs} startIcon={<Icon icon="solar:minimalistic-magnifer-line-duotone" width={18} />}>
-                {t('logPage.searchButton')}
-              </Button>
-            </ButtonGroup>
+                <Button onClick={searchLogs} size="small" startIcon={<Icon icon="solar:minimalistic-magnifer-line-duotone" width={18} />}>
+                  {t('logPage.searchButton')}
+                </Button>
+
+                <Button onClick={handleColumnMenuOpen} size="small" startIcon={<Icon icon="solar:settings-bold-duotone" width={18} />}>
+                  {t('logPage.columnSettings')}
+                </Button>
+              </ButtonGroup>
+            ) : (
+              <Stack
+                direction="row"
+                spacing={1}
+                divider={<Divider orientation="vertical" flexItem />}
+                justifyContent="space-around"
+                alignItems="center"
+              >
+                <IconButton onClick={handleRefresh} size="small">
+                  <Icon icon="solar:refresh-bold-duotone" width={18} />
+                </IconButton>
+                <IconButton onClick={searchLogs} size="small">
+                  <Icon icon="solar:minimalistic-magnifer-line-duotone" width={18} />
+                </IconButton>
+                <IconButton onClick={handleColumnMenuOpen} size="small">
+                  <Icon icon="solar:settings-bold-duotone" width={18} />
+                </IconButton>
+              </Stack>
+            )}
+
+            <Menu
+              anchorEl={columnMenuAnchor}
+              open={Boolean(columnMenuAnchor)}
+              onClose={handleColumnMenuClose}
+              PaperProps={{
+                style: {
+                  maxHeight: 300,
+                  width: 200
+                }
+              }}
+            >
+              <MenuItem disabled>
+                <Typography variant="subtitle2">{t('logPage.selectColumns')}</Typography>
+              </MenuItem>
+              <MenuItem onClick={handleSelectAllColumns} dense>
+                <Checkbox
+                  checked={Object.values(columnVisibility).every((visible) => visible)}
+                  indeterminate={
+                    !Object.values(columnVisibility).every((visible) => visible) &&
+                    Object.values(columnVisibility).some((visible) => visible)
+                  }
+                  size="small"
+                />
+                <ListItemText primary={t('logPage.columnSelectAll')} />
+              </MenuItem>
+              {[
+                { id: 'created_at', label: t('logPage.timeLabel') },
+                { id: 'channel_id', label: t('logPage.channelLabel'), adminOnly: true },
+                { id: 'user_id', label: t('logPage.userLabel'), adminOnly: true },
+                { id: 'group', label: t('logPage.groupLabel') },
+                { id: 'token_name', label: t('logPage.tokenLabel') },
+                { id: 'type', label: t('logPage.typeLabel') },
+                { id: 'model_name', label: t('logPage.modelLabel') },
+                { id: 'duration', label: t('logPage.durationLabel') },
+                { id: 'message', label: t('logPage.inputLabel') },
+                { id: 'completion', label: t('logPage.outputLabel') },
+                { id: 'quota', label: t('logPage.quotaLabel') },
+                { id: 'source_ip', label: t('logPage.sourceIp') },
+                { id: 'detail', label: t('logPage.detailLabel') }
+              ].map(
+                (column) =>
+                  (!column.adminOnly || userIsAdmin) && (
+                    <MenuItem key={column.id} onClick={() => handleColumnVisibilityChange(column.id)} dense>
+                      <Checkbox checked={columnVisibility[column.id] || false} size="small" />
+                      <ListItemText primary={column.label} />
+                    </MenuItem>
+                  )
+              )}
+            </Menu>
           </Container>
         </Toolbar>
         {searching && <LinearProgress />}
@@ -167,71 +330,93 @@ export default function Log() {
                   {
                     id: 'created_at',
                     label: t('logPage.timeLabel'),
-                    disableSort: false
+                    disableSort: false,
+                    hide: !columnVisibility.created_at
                   },
                   {
                     id: 'channel_id',
                     label: t('logPage.channelLabel'),
                     disableSort: false,
-                    hide: !userIsAdmin
+                    hide: !columnVisibility.channel_id || !userIsAdmin
                   },
                   {
                     id: 'user_id',
                     label: t('logPage.userLabel'),
                     disableSort: false,
-                    hide: !userIsAdmin
+                    hide: !columnVisibility.user_id || !userIsAdmin
                   },
                   {
                     id: 'group',
                     label: t('logPage.groupLabel'),
-                    disableSort: false
+                    disableSort: false,
+                    hide: !columnVisibility.group
                   },
                   {
                     id: 'token_name',
                     label: t('logPage.tokenLabel'),
-                    disableSort: false
+                    disableSort: false,
+                    hide: !columnVisibility.token_name
                   },
                   {
                     id: 'type',
                     label: t('logPage.typeLabel'),
-                    disableSort: false
+                    disableSort: false,
+                    hide: !columnVisibility.type
                   },
                   {
                     id: 'model_name',
                     label: t('logPage.modelLabel'),
-                    disableSort: false
+                    disableSort: false,
+                    hide: !columnVisibility.model_name
                   },
                   {
                     id: 'duration',
                     label: t('logPage.durationLabel'),
                     tooltip: t('logPage.durationTooltip'),
-                    disableSort: true
+                    disableSort: true,
+                    hide: !columnVisibility.duration
                   },
                   {
                     id: 'message',
                     label: t('logPage.inputLabel'),
-                    disableSort: true
+                    disableSort: true,
+                    hide: !columnVisibility.message
                   },
                   {
                     id: 'completion',
                     label: t('logPage.outputLabel'),
-                    disableSort: true
+                    disableSort: true,
+                    hide: !columnVisibility.completion
                   },
                   {
                     id: 'quota',
                     label: t('logPage.quotaLabel'),
-                    disableSort: true
+                    disableSort: true,
+                    hide: !columnVisibility.quota
+                  },
+                  {
+                    id: 'source_ip',
+                    label: t('logPage.sourceIp'),
+                    disableSort: true,
+                    hide: !columnVisibility.source_ip
                   },
                   {
                     id: 'detail',
                     label: t('logPage.detailLabel'),
-                    disableSort: true
+                    disableSort: true,
+                    hide: !columnVisibility.detail
                   }
                 ]}
               />
               <TableBody>
                 {logs.map((row, index) => (
-                  <LogTableRow item={row} key={`${row.id}_${index}`} userIsAdmin={userIsAdmin} userGroup={userGroup} />
+                  <LogTableRow
+                    item={row}
+                    key={`${row.id}_${index}`}
+                    userIsAdmin={userIsAdmin}
+                    userGroup={userGroup}
+                    columnVisibility={columnVisibility}
+                  />
                 ))}
               </TableBody>
             </Table>
@@ -243,7 +428,7 @@ export default function Log() {
           count={listCount}
           rowsPerPage={rowsPerPage}
           onPageChange={handleChangePage}
-          rowsPerPageOptions={[10, 25, 30]}
+          rowsPerPageOptions={PAGE_SIZE_OPTIONS}
           onRowsPerPageChange={handleChangeRowsPerPage}
           showFirstButton
           showLastButton

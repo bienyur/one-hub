@@ -37,6 +37,10 @@ type ProviderInterface interface {
 	GetChannel() *model.Channel
 	ModelMappingHandler(modelName string) (string, error)
 	GetRequester() *requester.HTTPRequester
+	SetOtherArg(otherArg string)
+	GetOtherArg() string
+	CustomParameterHandler() (map[string]interface{}, error)
+	GetSupportedResponse() bool
 }
 
 // 完成接口
@@ -129,4 +133,10 @@ type RerankInterface interface {
 type RealtimeInterface interface {
 	ProviderInterface
 	CreateChatRealtime(modelName string) (*websocket.Conn, requester.MessageHandler, *types.OpenAIErrorWithStatusCode)
+}
+
+type ResponsesInterface interface {
+	ProviderInterface
+	CreateResponses(request *types.OpenAIResponsesRequest) (*types.OpenAIResponsesResponses, *types.OpenAIErrorWithStatusCode)
+	CreateResponsesStream(request *types.OpenAIResponsesRequest) (requester.StreamReaderInterface[string], *types.OpenAIErrorWithStatusCode)
 }

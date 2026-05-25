@@ -20,6 +20,7 @@ import (
 	"one-api/types"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,13 +47,67 @@ func Path2Relay(c *gin.Context, path string) RelayBaseInterface {
 		relay = NewRelayTranscriptions(c)
 	} else if strings.HasPrefix(path, "/v1/audio/translations") {
 		relay = NewRelayTranslations(c)
+	} else if strings.HasPrefix(path, "/claude") {
+		relay = NewRelayClaudeOnly(c)
+	} else if strings.HasPrefix(path, "/gemini") {
+		relay = NewRelayGeminiOnly(c)
+	} else if strings.HasPrefix(path, "/v1/responses") {
+		relay = NewRelayResponses(c)
 	}
 
 	return relay
 }
 
-func GetProvider(c *gin.Context, modeName string) (provider providersBase.ProviderInterface, newModelName string, fail error) {
-	channel, fail := fetchChannel(c, modeName)
+func checkLimitModel(c *gin.Context, modelName string) (error error) {
+	// 判断modelName是否在token的setting.limits.LimitModelSetting.models[]范围内
+
+	// 从context中获取token设置
+	tokenSetting, exists := c.Get("token_setting")
+	if !exists {
+		// 如果没有token设置，则不进行限制
+		return nil
+	}
+
+	// 类型断言为TokenSetting指针
+	setting, ok := tokenSetting.(*model.TokenSetting)
+	if !ok || setting == nil {
+		// 类型断言失败或为空，不进行限制
+		return nil
+	}
+
+	// 检查是否启用了模型限制
+	if !setting.Limits.LimitModelSetting.Enabled {
+		// 未启用模型限制，允许所有模型
+		return nil
+	}
+
+	// 检查模型列表是否为空
+	if len(setting.Limits.LimitModelSetting.Models) == 0 {
+		// Empty model list means no models are allowed
+		return errors.New("No available models configured for current token")
+	}
+
+	// Check if modelName is in the allowed models list
+	for _, allowedModel := range setting.Limits.LimitModelSetting.Models {
+		if allowedModel == modelName {
+			// Found matching model, allow usage
+			return nil
+		}
+	}
+
+	// modelName is not in the allowed models list
+	return fmt.Errorf("Model %s is not supported for current token", modelName)
+}
+
+func GetProvider(c *gin.Context, modelName string) (provider providersBase.ProviderInterface, newModelName string, fail error) {
+	// 检查模型限制
+	if modelName != "" {
+		if err := checkLimitModel(c, modelName); err != nil {
+			c.AbortWithStatus(http.StatusNotFound)
+			return nil, "", err
+		}
+	}
+	channel, fail := fetchChannel(c, modelName)
 	if fail != nil {
 		return
 	}
@@ -64,15 +119,23 @@ func GetProvider(c *gin.Context, modeName string) (provider providersBase.Provid
 		fail = errors.New("channel not found")
 		return
 	}
-	provider.SetOriginalModel(modeName)
-	c.Set("original_model", modeName)
+	provider.SetOriginalModel(modelName)
+	c.Set("original_model", modelName)
 
-	newModelName, fail = provider.ModelMappingHandler(modeName)
+	newModelName, fail = provider.ModelMappingHandler(modelName)
 	if fail != nil {
 		return
 	}
 
+	BillingOriginalModel := false
+
+	if strings.HasPrefix(newModelName, "+") {
+		newModelName = newModelName[1:]
+		BillingOriginalModel = true
+	}
+
 	c.Set("new_model", newModelName)
+	c.Set("billing_original_model", BillingOriginalModel)
 
 	return
 }
@@ -99,9 +162,82 @@ func fetchChannelById(channelId int) (*model.Channel, error) {
 	return channel, nil
 }
 
+// GroupManager 统一管理分组逻辑
+type GroupManager struct {
+	primaryGroup string
+	backupGroup  string
+	context      *gin.Context
+}
+
+// NewGroupManager 创建分组管理器
+func NewGroupManager(c *gin.Context) *GroupManager {
+	return &GroupManager{
+		primaryGroup: c.GetString("token_group"),
+		backupGroup:  c.GetString("token_backup_group"),
+		context:      c,
+	}
+}
+
+// TryWithGroups 尝试使用主分组和备用分组
+func (gm *GroupManager) TryWithGroups(modelName string, filters []model.ChannelsFilterFunc, operation func(group string) (*model.Channel, error)) (*model.Channel, error) {
+	// 首先尝试主分组
+	if gm.primaryGroup != "" {
+		channel, err := gm.tryGroup(gm.primaryGroup, modelName, filters, operation)
+		if err == nil {
+			return channel, nil
+		}
+		logger.LogError(gm.context.Request.Context(), fmt.Sprintf("主分组 %s 失败: %v", gm.primaryGroup, err))
+	}
+
+	// 如果主分组失败，尝试备用分组
+	if gm.backupGroup != "" && gm.backupGroup != gm.primaryGroup {
+		logger.LogInfo(gm.context.Request.Context(), fmt.Sprintf("尝试使用备用分组: %s", gm.backupGroup))
+		channel, err := gm.tryGroup(gm.backupGroup, modelName, filters, operation)
+		if err == nil {
+			// 更新上下文中的分组信息
+			gm.context.Set("is_backupGroup", true)
+			if err := gm.setGroupRatio(gm.backupGroup); err != nil {
+				return nil, fmt.Errorf("设置备用分组倍率失败: %v", err)
+			}
+			return channel, nil
+		}
+		logger.LogError(gm.context.Request.Context(), fmt.Sprintf("备用分组 %s 也失败: %v", gm.backupGroup, err))
+		return nil, gm.createGroupError(gm.backupGroup, modelName, channel)
+	}
+	return nil, gm.createGroupError(gm.primaryGroup, modelName, nil)
+}
+
+// tryGroup 尝试使用指定分组
+func (gm *GroupManager) tryGroup(group string, modelName string, filters []model.ChannelsFilterFunc, operation func(group string) (*model.Channel, error)) (*model.Channel, error) {
+	if group == "" {
+		return nil, errors.New("分组为空")
+	}
+	return operation(group)
+}
+
+// setGroupRatio 设置分组比例
+func (gm *GroupManager) setGroupRatio(group string) error {
+	groupRatio := model.GlobalUserGroupRatio.GetBySymbol(group)
+	if groupRatio == nil {
+		return fmt.Errorf("分组 %s 不存在", group)
+	}
+	gm.context.Set("group_ratio", groupRatio.Ratio)
+	return nil
+}
+
+// createGroupError 创建统一的分组错误信息
+func (gm *GroupManager) createGroupError(group string, modelName string, channel *model.Channel) error {
+	if channel != nil {
+		logger.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
+		return errors.New("数据库一致性已被破坏，请联系管理员")
+	}
+	return fmt.Errorf("当前分组 %s 下对于模型 %s 无可用渠道", group, modelName)
+}
+
 func fetchChannelByModel(c *gin.Context, modelName string) (*model.Channel, error) {
-	group := c.GetString("token_group")
 	skipOnlyChat := c.GetBool("skip_only_chat")
+	isStream := c.GetBool("is_stream")
+
 	var filters []model.ChannelsFilterFunc
 	if skipOnlyChat {
 		filters = append(filters, model.FilterOnlyChat())
@@ -118,31 +254,31 @@ func fetchChannelByModel(c *gin.Context, modelName string) (*model.Channel, erro
 		}
 	}
 
-	channel, err := model.ChannelGroup.Next(group, modelName, filters...)
-	if err != nil {
-		message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", group, modelName)
-		if channel != nil {
-			logger.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
-			message = "数据库一致性已被破坏，请联系管理员"
-		}
-		return nil, errors.New(message)
+	if isStream {
+		filters = append(filters, model.FilterDisabledStream(modelName))
 	}
 
-	return channel, nil
+	// 使用统一的分组管理器
+	groupManager := NewGroupManager(c)
+	return groupManager.TryWithGroups(modelName, filters, func(group string) (*model.Channel, error) {
+		return model.ChannelGroup.Next(group, modelName, filters...)
+	})
+
 }
 
 func responseJsonClient(c *gin.Context, data interface{}) *types.OpenAIErrorWithStatusCode {
 	// 将data转换为 JSON
 	responseBody, err := json.Marshal(data)
 	if err != nil {
-		return common.ErrorWrapperLocal(err, "marshal_response_body_failed", http.StatusInternalServerError)
+		logger.LogError(c.Request.Context(), "marshal_response_body_failed:"+err.Error())
+		return nil
 	}
 
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(http.StatusOK)
 	_, err = c.Writer.Write(responseBody)
 	if err != nil {
-		return common.ErrorWrapperLocal(err, "write_response_body_failed", http.StatusInternalServerError)
+		logger.LogError(c.Request.Context(), "write_response_body_failed:"+err.Error())
 	}
 
 	return nil
@@ -150,7 +286,7 @@ func responseJsonClient(c *gin.Context, data interface{}) *types.OpenAIErrorWith
 
 type StreamEndHandler func() string
 
-func responseStreamClient(c *gin.Context, stream requester.StreamReaderInterface[string], endHandler StreamEndHandler) (errWithOP *types.OpenAIErrorWithStatusCode) {
+func responseStreamClient(c *gin.Context, stream requester.StreamReaderInterface[string], endHandler StreamEndHandler) (firstResponseTime time.Time, errWithOP *types.OpenAIErrorWithStatusCode) {
 	requester.SetEventStreamHeaders(c)
 	dataChan, errChan := stream.Recv()
 
@@ -159,6 +295,8 @@ func responseStreamClient(c *gin.Context, stream requester.StreamReaderInterface
 	var finalErr *types.OpenAIErrorWithStatusCode
 
 	defer stream.Close()
+
+	var isFirstResponse bool
 
 	// 在新的goroutine中处理stream数据
 	go func() {
@@ -171,6 +309,11 @@ func responseStreamClient(c *gin.Context, stream requester.StreamReaderInterface
 					return
 				}
 				streamData := "data: " + data + "\n\n"
+
+				if !isFirstResponse {
+					firstResponseTime = time.Now()
+					isFirstResponse = true
+				}
 
 				// 尝试写入数据，如果客户端断开也继续处理
 				select {
@@ -230,10 +373,10 @@ func responseStreamClient(c *gin.Context, stream requester.StreamReaderInterface
 
 	// 等待处理完成
 	<-done
-	return nil
+	return firstResponseTime, nil
 }
 
-func responseGeneralStreamClient(c *gin.Context, stream requester.StreamReaderInterface[string], endHandler StreamEndHandler) {
+func responseGeneralStreamClient(c *gin.Context, stream requester.StreamReaderInterface[string], endHandler StreamEndHandler) (firstResponseTime time.Time) {
 	requester.SetEventStreamHeaders(c)
 	dataChan, errChan := stream.Recv()
 
@@ -242,6 +385,7 @@ func responseGeneralStreamClient(c *gin.Context, stream requester.StreamReaderIn
 	// var finalErr *types.OpenAIErrorWithStatusCode
 
 	defer stream.Close()
+	var isFirstResponse bool
 
 	// 在新的goroutine中处理stream数据
 	go func() {
@@ -252,6 +396,10 @@ func responseGeneralStreamClient(c *gin.Context, stream requester.StreamReaderIn
 			case data, ok := <-dataChan:
 				if !ok {
 					return
+				}
+				if !isFirstResponse {
+					firstResponseTime = time.Now()
+					isFirstResponse = true
 				}
 				// 尝试写入数据，如果客户端断开也继续处理
 				select {
@@ -299,6 +447,8 @@ func responseGeneralStreamClient(c *gin.Context, stream requester.StreamReaderIn
 
 	// 等待处理完成
 	<-done
+
+	return firstResponseTime
 }
 
 func responseMultipart(c *gin.Context, resp *http.Response) *types.OpenAIErrorWithStatusCode {
@@ -406,7 +556,7 @@ var (
 	quotaKeywords  = []string{"余额", "额度", "quota", "无可用渠道", "令牌"}
 )
 
-func relayResponseWithErr(c *gin.Context, err *types.OpenAIErrorWithStatusCode) {
+func FilterOpenAIErr(c *gin.Context, err *types.OpenAIErrorWithStatusCode) (errWithStatusCode types.OpenAIErrorWithStatusCode) {
 	newErr := types.OpenAIErrorWithStatusCode{}
 	if err != nil {
 		newErr = *err
@@ -415,7 +565,7 @@ func relayResponseWithErr(c *gin.Context, err *types.OpenAIErrorWithStatusCode) 
 	if newErr.StatusCode == http.StatusTooManyRequests {
 		newErr.OpenAIError.Message = "当前分组上游负载已饱和，请稍后再试"
 	}
-	statusCode := newErr.StatusCode
+
 	// 如果message中已经包含 request id: 则不再添加
 	if strings.Contains(newErr.Message, "(request id:") {
 		newErr.Message = requestIdRegex.ReplaceAllString(newErr.Message, "")
@@ -424,17 +574,24 @@ func relayResponseWithErr(c *gin.Context, err *types.OpenAIErrorWithStatusCode) 
 	requestId := c.GetString(logger.RequestIdKey)
 	newErr.OpenAIError.Message = utils.MessageWithRequestId(newErr.OpenAIError.Message, requestId)
 
-	switch newErr.OpenAIError.Type {
-	case "new_api_error", "one_api_error", "shell_api_error":
+	if !newErr.LocalError && newErr.OpenAIError.Type == "one_hub_error" || strings.HasSuffix(newErr.OpenAIError.Type, "_api_error") {
 		newErr.OpenAIError.Type = "system_error"
 		if utils.ContainsString(newErr.Message, quotaKeywords) {
 			newErr.Message = "上游负载已饱和，请稍后再试"
-			statusCode = http.StatusTooManyRequests
+			newErr.StatusCode = http.StatusTooManyRequests
 		}
 	}
 
-	c.JSON(statusCode, gin.H{
-		"error": newErr.OpenAIError,
+	if code, ok := newErr.OpenAIError.Code.(string); ok && code == "bad_response_status_code" && !strings.Contains(newErr.OpenAIError.Message, "bad response status code") {
+		newErr.OpenAIError.Message = fmt.Sprintf("Provider API error: bad response status code %s", newErr.OpenAIError.Param)
+	}
+
+	return newErr
+}
+
+func relayResponseWithOpenAIErr(c *gin.Context, err *types.OpenAIErrorWithStatusCode) {
+	c.JSON(err.StatusCode, gin.H{
+		"error": err.OpenAIError,
 	})
 }
 
@@ -452,4 +609,58 @@ func relayRerankResponseWithErr(c *gin.Context, err *types.OpenAIErrorWithStatus
 	c.JSON(err.StatusCode, gin.H{
 		"detail": err.OpenAIError.Message,
 	})
+}
+
+// mergeCustomParamsForPreMapping applies custom parameter logic similar to OpenAI provider
+func mergeCustomParamsForPreMapping(requestMap map[string]interface{}, customParams map[string]interface{}) map[string]interface{} {
+	// 检查是否需要覆盖已有参数
+	shouldOverwrite := false
+	if overwriteValue, exists := customParams["overwrite"]; exists {
+		if boolValue, ok := overwriteValue.(bool); ok {
+			shouldOverwrite = boolValue
+		}
+	}
+
+	// 检查是否按照模型粒度控制
+	perModel := false
+	if perModelValue, exists := customParams["per_model"]; exists {
+		if boolValue, ok := perModelValue.(bool); ok {
+			perModel = boolValue
+		}
+	}
+
+	customParamsModel := customParams
+	if perModel {
+		if modelValue, ok := requestMap["model"].(string); ok {
+			if v, exists := customParams[modelValue]; exists {
+				if modelConfig, ok := v.(map[string]interface{}); ok {
+					customParamsModel = modelConfig
+				} else {
+					customParamsModel = map[string]interface{}{}
+				}
+			} else {
+				customParamsModel = map[string]interface{}{}
+			}
+		}
+	}
+
+	// 添加额外参数
+	for key, value := range customParamsModel {
+		if key == "stream" || key == "overwrite" || key == "per_model" || key == "pre_add" {
+			continue
+		}
+
+		// 根据覆盖设置决定如何添加参数
+		if shouldOverwrite {
+			// 覆盖模式：直接添加/覆盖参数
+			requestMap[key] = value
+		} else {
+			// 非覆盖模式：仅当参数不存在时添加
+			if _, exists := requestMap[key]; !exists {
+				requestMap[key] = value
+			}
+		}
+	}
+
+	return requestMap
 }

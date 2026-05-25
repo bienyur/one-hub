@@ -140,10 +140,6 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
-		err = db.AutoMigrate(&Ability{})
-		if err != nil {
-			return err
-		}
 		err = db.AutoMigrate(&Log{})
 		if err != nil {
 			return err
@@ -186,6 +182,28 @@ func InitDB() (err error) {
 		err = db.AutoMigrate(&ModelOwnedBy{})
 		if err != nil {
 			return err
+		}
+
+		err = db.AutoMigrate(&ModelInfo{})
+		if err != nil {
+			return err
+		}
+
+		err = DB.AutoMigrate(&WebAuthnCredential{})
+		if err != nil {
+			return err
+		}
+
+		if config.UserInvoiceMonth {
+			err = db.AutoMigrate(&StatisticsMonthGeneratedHistory{})
+			if err != nil {
+				return err
+			}
+
+			err = db.AutoMigrate(&StatisticsMonth{})
+			if err != nil {
+				return err
+			}
 		}
 
 		migrationAfter(DB)

@@ -4,10 +4,17 @@ import (
 	"fmt"
 	"net/http"
 	"one-api/common"
+	"one-api/common/config"
 	"one-api/common/utils"
 	"one-api/model"
+	"one-api/providers/claude"
+	"one-api/providers/gemini"
 	"one-api/types"
 	"sort"
+	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/gin-gonic/gin"
 )
@@ -60,6 +67,84 @@ func ListModelsByToken(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"object": "list",
 		"data":   groupOpenAIModels,
+	})
+}
+
+// https://generativelanguage.googleapis.com/v1beta/models?key=xxxxxxx
+func ListGeminiModelsByToken(c *gin.Context) {
+	groupName := c.GetString("token_group")
+	if groupName == "" {
+		groupName = c.GetString("group")
+	}
+
+	if groupName == "" {
+		common.AbortWithMessage(c, http.StatusServiceUnavailable, "分组不存在")
+		return
+	}
+
+	models, err := model.ChannelGroup.GetGroupModels(groupName)
+	if err != nil {
+		c.JSON(200, gemini.ModelListResponse{
+			Models: []gemini.ModelDetails{},
+		})
+		return
+	}
+	sort.Strings(models)
+
+	var geminiModels []gemini.ModelDetails
+	for _, modelName := range models {
+		// Get the price to check if it's a Gemini model (channel_type=25)
+		price := model.PricingInstance.GetPrice(modelName)
+		if price.ChannelType == config.ChannelTypeGemini {
+			geminiModels = append(geminiModels, gemini.ModelDetails{
+				Name:        fmt.Sprintf("models/%s", modelName),
+				DisplayName: cases.Title(language.Und).String(strings.ReplaceAll(modelName, "-", " ")),
+				SupportedGenerationMethods: []string{
+					"generateContent",
+				},
+			})
+		}
+	}
+
+	c.JSON(200, gemini.ModelListResponse{
+		Models: geminiModels,
+	})
+}
+
+func ListClaudeModelsByToken(c *gin.Context) {
+	groupName := c.GetString("token_group")
+	if groupName == "" {
+		groupName = c.GetString("group")
+	}
+
+	if groupName == "" {
+		common.AbortWithMessage(c, http.StatusServiceUnavailable, "分组不存在")
+		return
+	}
+
+	models, err := model.ChannelGroup.GetGroupModels(groupName)
+	if err != nil {
+		c.JSON(200, claude.ModelListResponse{
+			Data: []claude.Model{},
+		})
+		return
+	}
+	sort.Strings(models)
+
+	var claudeModelsData []claude.Model
+	for _, modelName := range models {
+		// Get the price to check if it's a Gemini model (channel_type=25)
+		price := model.PricingInstance.GetPrice(modelName)
+		if price.ChannelType == config.ChannelTypeAnthropic {
+			claudeModelsData = append(claudeModelsData, claude.Model{
+				ID:   modelName,
+				Type: "model",
+			})
+		}
+	}
+
+	c.JSON(200, claude.ModelListResponse{
+		Data: claudeModelsData,
 	})
 }
 
@@ -157,6 +242,10 @@ func AvailableModel(c *gin.Context) {
 		"message": "",
 		"data":    getAvailableModels(groupName),
 	})
+}
+
+func GetAvailableModels(groupName string) map[string]*AvailableModelResponse {
+	return getAvailableModels(groupName)
 }
 
 func getAvailableModels(groupName string) map[string]*AvailableModelResponse {

@@ -1,4 +1,22 @@
 {
+  "System Logs": "システムログ",
+  "view_more_logs_on_server": "より多くのシステムログを表示するには、サーバーにアクセスしてください",
+  "systemInfo": "システム情報",
+  "Auto Refresh": "自動リフレッシュ",
+  "Refresh Interval": "リフレッシュ間隔",
+  "1 second": "1秒",
+  "3 seconds": "3秒",
+  "5 seconds": "5秒",
+  "10 seconds": "10秒",
+  "30 seconds": "30秒",
+  "1 minute": "1分",
+  "Max Entries": "最大エントリー数",
+  "Clear": "クリア",
+  "No logs available": "ログはありません",
+  "No matching logs found": "一致するログが見つかりません",
+  "Search logs...": "ログを検索...",
+  "invite_count": "招待人数",
+  "invite_reward": "招待報酬",
   "AZURE_OPENAI_ENDPOINT": "AZURE_OPENAI_ENDPOINT",
   "CheckUpdatesTable": {
     "addNewOnly": "新規追加のみ",
@@ -18,7 +36,23 @@
     "pleaseFetchData": "まずデータを取得してください",
     "priceChangeModels": "価格変更モデル（参考用。自分で価格を変更した場合は無視してください）",
     "to": "から",
-    "url": "URL"
+    "url": "URL",
+    "priceServerTotal": "価格サーバー総数",
+    "updateModeAdd": "新規追加のみ",
+    "updateModeUpdate": "価格変更のみ",
+    "updateModeOverwrite": "上書き",
+    "added": "追加",
+    "extraRatiosAdded": "拡張倍率の追加",
+    "extraRatiosChanged": "拡大率の変化",
+    "extraRatiosChanges": "拡大率の変動",
+    "extraRatiosChangesTip": "拡張率変更：{{changes}}",
+    "extraRatiosRemoved": "拡張倍率を削除します",
+    "modified": "変更",
+    "removed": "削除"
+  },
+  "sidebar": {
+    "totalQuota": "総額",
+    "remainingBalance": "残高"
   },
   "Header 配置": "ヘッダー構成",
   "about": {
@@ -89,7 +123,27 @@
     "requiredModels": "モデルを空にすることはできません",
     "requiredName": "名前は必須です",
     "validJson": "有効な JSON 文字列である必要があります",
-    "copyModels": "モデルをコピーします"
+    "copyModels": "モデルをコピーします",
+    "mapAdd": "{{name}}を追加",
+    "mapAddByJson": "JSONを使用して{{name}}を追加します。",
+    "mapJsonInput": "JSON 入力",
+    "listJsonError": "JSON形式が間違っています。入力が配列形式であることを確認してください。",
+    "listJsonHelperText": "JSON配列形式を入力してください。例：[\"プロジェクト1\", \"プロジェクト2\", \"プロジェクト3\"]",
+    "modelsFetched": "モデルの取得に成功しました",
+    "selectedMappingCount": "選択されたモデルマッピング{{count}}個",
+    "addMapping": "モデルマッピングを追加",
+    "addToModelMapping": "モデルマッピングに追加",
+    "modelMapping": "モデルマッピング",
+    "modelMappingSettings": "モデルマッピング設定",
+    "prefixOrSuffix": "プレフィックス／サフィックス",
+    "removePrefixHelp": "削除する前のプレフィックスを入力してください",
+    "removeSuffixHelp": "削除する後のサフィックスを入力してください",
+    "addPlusSign": "マッピング前の課金を使用",
+    "mappingPreview": "マッピングプレビュー",
+    "removePrefix": "前缀を削除",
+    "removeSuffix": "後缀を削除",
+    "collapseList": "リストを折りたたむ",
+    "expandList": "リストを展開"
   },
   "channel_index": {
     "AzureApiVersion": "Azureのバージョン番号",
@@ -139,7 +193,8 @@
     "unselectAll": "すべてを非選択にする",
     "updateEnabledBalance": "有効残高を更新",
     "usedBalance": "使用済み/残高",
-    "weight": "ウェイト"
+    "weight": "ウェイト",
+    "onlyTags": "タグのみ表示"
   },
   "channel_row": {
     "auto": "自動",
@@ -165,7 +220,40 @@
     "updateChannelBalance": "有効になっているすべてのチャンネルバランスが更新されました。",
     "updateOk": "アップデート完了！",
     "weightTip": "重みは 1 未満にはできません",
-    "check": "検出"
+    "check": "検出",
+    "batchAddIDRequired": "少なくとも1つのチャネルを選択してください",
+    "batchDelete": "一括削除",
+    "batchDeleteConfirm": "選択された {{count}} 個のチャネルを削除しますか？この操作は取り消せません。",
+    "batchDeleteError": "一括削除に失敗しました：{{message}}",
+    "batchDeleteErrorTip": "一括削除エラー：{{message}}",
+    "batchDeleteSuccess": "一括削除しました！",
+    "batchDeleteTip": "選択したチャネルを一括削除しますか？",
+    "deleteTag": "タグを削除します。",
+    "deleteTagAndChannels": "タグとそのすべてのチャネルを削除します。",
+    "deleteTagConfirm": "タグ {{tag}} およびそのすべてのチャネルを削除してもよろしいですか？この操作は取り消せません。",
+    "deleteTagError": "タグの削除に失敗しました：{{message}}",
+    "deleteTagSuccess": "タグ {{tag}} が削除されました",
+    "disable": "無効",
+    "disableAllChannels": "すべてのチャネルを無効にする",
+    "disableTagChannels": "タグチャネルを無効にする",
+    "enable": "有効",
+    "enableAllChannels": "すべてのチャネルを有効にする",
+    "enableTagChannels": "タグチャネルを有効にする",
+    "getTagChannelsError": "タグチャネルの取得に失敗しました：{{message}}",
+    "getTagChannelsErrorTip": "タグチャネルの取得中にエラーが発生しました：{{message}}",
+    "noTagChannels": "タグチャネルが見つかりません",
+    "priorityUpdateError": "優先度の更新に失敗しました：{{message}}",
+    "priorityUpdateSuccess": "優先度が更新されました",
+    "refreshList": "リストを更新する",
+    "tag": "タグ",
+    "tagChannelList": "タグチャネルリスト",
+    "tagChannelsConfirm": "すべてのチャネルで{{action}}タグ{{tag}}を確認しますか？",
+    "tagChannelsError": "アクション{{action}}のラベルチャネルが失敗しました: {{message}}",
+    "tagChannelsSuccess": "タグチャネル{{action}}が成功しました",
+    "weightUpdateError": "重みの更新に失敗しました：{{message}}",
+    "weightUpdateSuccess": "重みが更新されました",
+    "key": "鍵",
+    "keyRequired": "キーを入力してください。"
   },
   "common": {
     "again": "再試行 ({{count}})",
@@ -201,7 +289,16 @@
     "unableServer": "サーバーに正しく接続できません!",
     "unableServerTip": "新しいバージョンが利用可能です: {{version}}、ショートカット キー Shift F5 を使用してページを更新してください",
     "unknown": "未知",
-    "verificationCode": "検証コード"
+    "verificationCode": "検証コード",
+    "deleteError": "削除に失敗しました：{{message}}",
+    "deleteSuccess": "削除しました！",
+    "jsonFormatError": "JSON形式が間違っています",
+    "action": "操作",
+    "actions": "操作 -> 操作",
+    "noDataAvailable": "データがありません。",
+    "pageSize": "ページごとのアイテム数",
+    "search": "検索",
+    "total": "総数"
   },
   "dashboard": "ダッシュボード",
   "dashboard_index": {
@@ -217,7 +314,28 @@
     "today_requests": "今日のリクエスト",
     "today_tokens": "今日のトークン",
     "unknown": "不明",
-    "used": "使用済み"
+    "used": "使用済み",
+    "week_model_statistics": "近七日模型統計",
+    "week_consumption_log": "近七日消費日志",
+    "7days_model_usage_pie": "近七日模型使用情況",
+    "date": "日付",
+    "request_count": "リクエスト数",
+    "amount": "金額",
+    "tokens": "Tokens(入力/出力)",
+    "cache_tokens": "CacheTokens",
+    "request_time": "リクエスト時間(s)",
+    "loading": "読み込み中...",
+    "quickStart": "クイックスタート",
+    "quickStartTip": "下のボタンをクリックすると、システムはsys_playgroundのトークンを自動的に作成します",
+    "ComparedWithYesterday": "昨日と比較",
+    "usage": "使用率",
+    "RPM": "現在のRPM",
+    "TPM": "現在のTPM",
+    "total": "総回数",
+    "availability": "稼働率",
+    "tab_status": "ステータス",
+    "tab_dashboard": "ダッシュボード",
+    "title": "ダッシュボード"
   },
   "description": "All in one の OpenAI インターフェース\nさまざまな API アクセス方法を統合\nワンクリックで展開、即座に使用可能",
   "echo 映射": "エコーマッピング",
@@ -246,20 +364,60 @@
   },
   "jump": "リダイレクト中...",
   "log": "ログ",
+  "invoice": "月次請求書",
+  "midjourney": "Midjourney",
+  "invoice_index": {
+    "invoice": "月次請求書",
+    "refresh": "更新",
+    "id": "ID",
+    "name": "名前",
+    "status": "ステータス",
+    "amount": "金額",
+    "createdTime": "作成時間",
+    "paidTime": "支払時間",
+    "actions": "アクション",
+    "deleteInvoice": "請求書を削除",
+    "confirmDeleteInvoice": "この請求書を削除してもよろしいですか",
+    "close": "閉じる",
+    "delete": "削除",
+    "paid": "支払済み",
+    "unpaid": "未払い",
+    "date": "請求時間",
+    "requestCount": "リクエスト総数",
+    "quota": "消費金額",
+    "promptTokens": "入力トークン",
+    "completionTokens": "出力トークン",
+    "requestTime": "リクエスト時間",
+    "tokens": "トークン（入力/出力）",
+    "alert": "毎月1日の深夜に前月の請求データが生成されます",
+    "viewInvoice": "請求書を表示",
+    "modelName": "モデル名",
+    "option": "オプション",
+    "username": "ユーザー名",
+    "email": "メール",
+    "userinfo": "ユーザー情報",
+    "usage_statistics": "使用統計",
+    "download": "PDFをダウンロード",
+    "usage_details": "請求書の詳細",
+    "summary": "概要"
+  },
   "logPage": {
-    "cachedTokens": "Cache Tokens",
+    "cachedTokens": "Cache Tokens (* {{ ratio }})",
     "channelLabel": "チャネル",
+    "columnSettings": "列設定",
+    "selectColumns": "列を選択",
+    "columnSelectAll": "すべて選択",
     "detailLabel": "詳細",
     "durationLabel": "時間",
     "durationTooltip": "t/s: 出力トークンの数を総生成時間で割った値であり、生成速度を示します。",
     "groupLabel": "グループ",
-    "inputAudioTokens": "Input audio tokens",
+    "inputAudioTokens": "Input audio tokens (* {{ ratio }})",
     "inputLabel": "入力",
-    "inputTextTokens": "Input text tokens",
+    "inputTextTokens": "Input text tokens (* {{ ratio }})",
     "modelLabel": "モデル",
-    "outputAudioTokens": "Output audio tokens",
+    "outputAudioTokens": "Output audio tokens (* {{ ratio }})",
     "outputLabel": "出力",
-    "outputTextTokens": "Output text tokens",
+    "outputTextTokens": "Output text tokens (* {{ ratio }})",
     "quotaLabel": "クォータ",
     "refreshButton": "更新/検索条件をクリア",
     "searchButton": "検索",
@@ -271,6 +429,14 @@
     "totalOutputTokens": "Total output tokens",
     "typeLabel": "タイプ",
     "userLabel": "ユーザー",
+    "sourceIp": "Source IP",
+    "logType": {
+      "all": "すべて",
+      "recharge": "チャージ",
+      "consumption": "消費",
+      "management": "管理",
+      "system": "システム"
+    },
     "content": {
       "calculate_steps": "計算手順:",
       "calculate_steps_tip": "PS：このシステムはポイントに基づいて計算され、すべての金額はポイント換算であり、1ポイント＝$0.000002です。最低消費額は1ポイントであり、この計算手順は参考用として提供されます。実際の料金が優先されます。",
@@ -281,10 +447,30 @@
       "original_output_price": "元の出力価格：${{ price }}/M",
       "original_times_price": "元の価格：${{ times }} / 回",
       "output_price": "出力: ${{ price }} /M",
-      "times_price": "${{ times }} / 回"
+      "times_price": "${{ times }} / 回",
+      "free": "無料",
+      "old_log": "旧バージョンのログ",
+      "illustrate": "* この記録はシステムアップグレード前のログであり"
+    },
+    "quotaDetail": {
+      "saved": "節約 ",
+      "originalPrice": "元の価格",
+      "inputPrice": "入力価格",
+      "outputPrice": "出力価格",
+      "groupRatio": "グループ倍率",
+      "groupRatioValue": "グループ倍率",
+      "actualPrice": "実際の価格",
+      "input": "入力",
+      "output": "出力",
+      "finalCalculation": "最終計算",
+      "originalBilling": "元の請求",
+      "actualBilling": "実際の請求",
+      "calculationNote": "PS：このシステムはポイントに基づいて計算され、すべての金額はポイント換算であり、1ポイント＝$0.000002です。最低消費額は1ポイントであり、この計算手順は参考用として提供されます。実際の料金が優先されます。",
+      "times": "倍"
     },
     "cachedReadTokens": "キャッシュからトークンを読み取ります（* {{ ratio }} )",
-    "cachedWriteTokens": "トークンのキャッシュ書き込み（* {{ ratio }} ）"
+    "cachedWriteTokens": "トークンのキャッシュ書き込み（* {{ ratio }} ）",
+    "reasoningTokens": "推理トークン"
   },
   "login": {
     "codeRequired": "確認コードを入力する必要があります",
@@ -317,6 +503,7 @@
     "login": "ログイン",
     "signout": "ログアウト",
     "signup": "サインアップ",
+    "status": "ステータス",
     "unknownVersion": "未知バージョン",
     "welcomeBack": "おかえりなさい"
   },
@@ -342,18 +529,65 @@
   "modelpricePage": {
     "availableModels": "利用可能なモデル",
     "channelType": "サプライヤー",
+    "provider": "プロバイダー",
     "group": "グループ",
+    "inputPrice": "入力価格",
+    "outputPrice": "出力価格",
     "inputMultiplier": "価格を入力してください",
     "model": "モデル名",
+    "modelName": "モデル名",
     "noneGroup": "現在のグループは利用できません",
     "outputMultiplier": "価格を出力します。",
+    "timesPrice": "1回あたりの価格",
     "search": "検索",
     "times": "回数制課金",
     "tokens": "量に応じて支払う",
     "type": "タイプ",
-    "inputAudioTokensRatio": "オーディオ入力倍率",
+    "input_audio_tokens": "オーディオ入力倍率",
     "other": "その他",
-    "outputAudioTokensRatio": "オーディオ出力倍率"
+    "output_audio_tokens": "オーディオ出力倍率",
+    "rate": "倍率",
+    "RPM": "APIレート",
+    "free": "無料",
+    "cached_tokens": "キャッシュ倍率",
+    "cached_write_tokens": "キャッシュ書き込み倍率",
+    "cached_read_tokens": "キャッシュ読み取り倍率",
+    "reasoning_tokens": "推論倍率",
+    "input_text_tokens": "入力テキスト倍率",
+    "output_text_tokens": "出力テキスト倍率",
+    "all": "すべて",
+    "extraRatios": "価格拡張",
+    "input": "入力",
+    "input_image_tokens": "画像倍率",
+    "noExtraRatios": "拡張価格はありません",
+    "output": "出力",
+    "output_image_tokens": "画像倍率",
+    "price": "価格",
+    "showAll": "すべて表示",
+    "onlyAvailable": "利用可能なだけ表示",
+    "modelPricing": "モデル価格設定",
+    "unit": "単位",
+    "modalityType": "モダリティタイプ",
+    "allModality": "すべて",
+    "tags": "タグ",
+    "allTags": "すべて",
+    "modelInfo": "モデル情報",
+    "contextLength": "コンテキスト長",
+    "maxTokens": "最大トークン数",
+    "inputModality": "入力モダリティ",
+    "outputModality": "出力モダリティ",
+    "priceDetails": "価格詳細",
+    "priceNote": "グループによって価格が異なります。トークン管理でグループを切り替えてください。",
+    "otherInfo": "その他の情報",
+    "totalModels": "合計 {{count}} モデル",
+    "noModelsFound": "一致するモデルが見つかりません",
+    "noModelsFoundTip": "フィルタまたは検索キーワードを調整してみてください",
+    "modelId": "モデルID",
+    "copyModelId": "モデルIDをコピー",
+    "billingMethod": "課金方式",
+    "currentUserGroup": "現在のユーザーグループ",
+    "viewDetail": "詳細を表示",
+    "timeUnit": "回"
   },
   "nova 映射": "新星マッピング",
   "onyx 映射": "オニキスマッピング",
@@ -457,7 +691,8 @@
     "noPriceModelWarning": "未設定の価格モデルがあります。価格を設定してください：",
     "refreshButton": "更新",
     "singleOperation": "シングル操作",
-    "updatePricesButton": "価格を更新"
+    "updatePricesButton": "価格を更新",
+    "title": "モデル価格"
   },
   "pricing_edit": {
     "channelType": "チャンネルの種類",
@@ -482,7 +717,18 @@
     "saveOk": "正常に保存",
     "type": "タイプ",
     "typeCheck": "タイプはトークンまたは時間のみです",
-    "typeErr": "タイプエラー"
+    "typeErr": "タイプエラー",
+    "locked_title": "価格をロックする",
+    "locked": "ロックされた価格",
+    "unlocked": "ロックされていない価格",
+    "lockedTip": "価格をロックすると、サーバーまたはプログラムの価格更新によって上書きできなくなります。プログラムまたは価格サーバーの価格更新を希望する場合はロックしないでください",
+    "completionRatio": "完了率",
+    "delMultipleInfoTip": "選択した{{count}}つの価格を削除しますか？",
+    "extraRatios": "追加拡張率",
+    "noAvailableRatios": "利用可能な拡張倍率はありません",
+    "noExtraRatios": "追加の拡張倍率はありません。ドロップダウンメニューから選択してください。",
+    "promptRatio": "倍率係数",
+    "selectExtraRatio": "拡大率を選択します"
   },
   "profile": "プロフィール",
   "profilePage": {
@@ -504,6 +750,9 @@
     "password": "パスワード",
     "passwordMinLength": "パスワードは8文字以上でなければなりません",
     "personalInfo": "個人情報",
+    "general": "一般",
+    "binding": "連携",
+    "webauthn": "WebAuthn",
     "resetToken": "アクセストークンのリセット",
     "submit": "送信",
     "telegramBot": "電報ボット",
@@ -516,7 +765,31 @@
     "usernameMinLength": "ユーザー名は3文字以上でなければなりません",
     "usernameRequired": "ユーザー名は空にできません",
     "wechatBindSuccess": "WeChatアカウントのバインドに成功しました！",
-    "yourTokenIs": "あなたのアクセストークンは次の通りです："
+    "yourTokenIs": "あなたのアクセストークンは次の通りです：",
+    "registerWebauthn": "WebAuthn認証を登録",
+    "webauthnManagement": "WebAuthn資格情報の管理",
+    "webauthnDescription": "WebAuthnはパスワードレス認証を提供し、指紋認証、Face ID、セキュリティキーなどの生体認証を使用してログインできます。",
+    "registeredCredentials": "登録済み認証情報",
+    "alias": "エイリアス:",
+    "credentialId": "認証情報ID:",
+    "registerTime": "登録日時:",
+    "delete": "削除",
+    "noWebauthnCredentials": "WebAuthn 資格情報が見つかりません",
+    "confirmPassword": "パスワードの確認",
+    "inputConfirmPasswordPlaceholder": "パスワードを再入力してください",
+    "passwordsNotMatch": "パスワードが一致しません",
+    "group": "グループ",
+    "rate": "レート",
+    "speed": "速度",
+    "bound": "連携済み",
+    "unbound": "未連携",
+    "bind": "連携",
+    "unbind": "解除",
+    "change": "変更",
+    "unbindSuccess": "解除成功",
+    "unbindConfirm": "解除確認",
+    "unbindWarning": "本当に解除しますか？解除後はこの方法でログインできなくなります。",
+    "cancel": "キャンセル"
   },
   "redemption": "引き換え",
   "redemptionPage": {
@@ -573,7 +846,7 @@
   "setting_index": {
     "operationSettings": {
       "chatLinkSettings": {
-        "info": "チャットリンクを構成します。この設定は、トークン内のチャットやホームページのPlaygroundのチャットで有効です。 <br />リンクでは、&#123;key&#125;がユーザーのトークンを、&#123;server&#125;がサーバーアドレスを置き換えることができます。例えば：{'https://chat.oneapi.pro/#/?settings={\"key\":\"sk-{key}\",\"url\":\"{server}\"}'}<br />構成されていない場合、次の4つのリンクがデフォルトで構成されます：<br />ChatGPT Next ： {'https://chat.oneapi.pro/#/?settings={\"key\":\"{key}\",\"url\":\"{server}\"}'}<br />chatgpt-web-midjourney-proxy ： {'https://vercel.ddaiai.com/#/?settings={\"key\":\"{key}\",\"url\":\"{server}\"}'}<br />AMA ： {'ama://set-api-key?server={server}&key={key}'}<br />opencat ： {'opencat://team/join?domain={server}&token={key}'}<br />並べ替えルール：値が大きいほど順位が高く、同じ値の場合は構成順に並べられます",
+        "info": "チャット リンクを設定します。この設定はトークンのチャットと、ホームページの Playground のチャットに適用されます。<br />リンク内で &#123;key&#125; をユーザーのトークンに、&#123;server&#125; をサーバーアドレスに置き換えることができます。base64<[xxxxxx]> で base64 エンコードを行うことができます。例：{'https://chat.oneapi.pro/#/?settings={\"key\":\"sk-{key}\",\"url\":\"{server}\"}'}<br />設定しない場合、デフォルトで以下の4つのリンクが設定されます:<br />ChatGPT Next：{'https://chat.oneapi.pro/#/?settings={\"key\":\"{key}\",\"url\":\"{server}\"}'}<br />chatgpt-web-midjourney-proxy：{'https://vercel.ddaiai.com/#/?settings={\"key\":\"{key}\",\"url\":\"{server}\"}'}<br />AMA 问天：{'ama://set-api-key?server={server}&key={key}'}<br />opencat：{'opencat://team/join?domain={server}&token={key}'}<br />並び順：値が大きいほど上位に表示され、値が同じ場合は設定順に表示されます。",
         "save": "チャットリンク設定を保存",
         "title": "チャットリンク設定"
       },
@@ -602,6 +875,10 @@
         "topUpLink": {
           "label": "チャージリンク",
           "placeholder": "例えば、カード発行ウェブサイトの購入リンク"
+        },
+        "retryTimeOut": {
+          "label": "再試行のタイムアウト時間（秒）",
+          "placeholder": "再試行のタイムアウト時間（秒）"
         }
       },
       "logSettings": {
@@ -640,7 +917,9 @@
         },
         "mjNotify": "Midjourneyはコールバックを許可します（サーバーのIPアドレスが漏洩する可能性があります）",
         "saveButton": "その他の設定を保存",
-        "title": "その他の設定"
+        "title": "その他の設定",
+        "claudeAPIEnabled": "Claude APIを有効にしますか？",
+        "geminiAPIEnabled": "Gemini APIを有効にしますか？"
       },
       "paymentSettings": {
         "alert": "支払い設定： <br />1. USD為替レート：リチャージ金額のUSD金額を計算するために使用されます <br />2. 最低リチャージ金額（USD）：最低リチャージ金額、単位はUSD、整数を入力してください <br />3. ページはすべてUSD単位で計算され、ユーザーが支払う実際の通貨は支払いゲートウェイに設定された通貨に応じて変換されます <br />例：Aゲートウェイが通貨をCNYに設定すると、ユーザーは100USDを支払い、実際の支払金額は100 * USD為替レートになります <br />Bゲートウェイが通貨をUSDに設定すると、ユーザーは100USDを支払い、実際の支払金額は100USDになります",
@@ -689,10 +968,39 @@
         "title": "レート設定"
       },
       "title": "運営設定",
-      "audioTokenSettings": {
-        "info": "オーディオ倍率を設定します。JSON形式で、キーはモデル名であり、値は入力および出力のオーディオトークンの倍率です。例：{\"gpt-4o-audio-preview\":{\"input_audio_tokens_ratio\":40,\"output_audio_tokens_ratio\":20},\"gpt-4o-mini-audio-preview\":{\"input_audio_tokens_ratio\":67,\"output_audio_tokens_ratio\":34}}",
-        "save": "オーディオトークン設定を保存します",
-        "title": "オーディオトークンの設定"
+      "extraTokenPriceJson": {
+        "info": "追加トークン価格を設定します。JSON形式で、キーはモデル名であり、値は入力および出力の追加トークン価格です。例：{\"gpt-4o-audio-preview\":{\"input_audio_tokens_ratio\":40,\"output_audio_tokens_ratio\":20},\"gpt-4o-mini-audio-preview\":{\"input_audio_tokens_ratio\":67,\"output_audio_tokens_ratio\":34}}",
+        "save": "追加トークン価格設定を保存します",
+        "title": "追加トークン価格設定"
+      },
+      "disableChannelKeywordsSettings": {
+        "info": "キーワードを1行ずつ入力して、禁止ワードリストを設定してください。",
+        "save": "無効なチャネルキーワード設定を保存します",
+        "title": "チャネルキーワード設定を無効にする"
+      },
+      "safetySettings": {
+        "title": "システムセキュリティ設定",
+        "enableSafe": "プロンプトのセキュリティチェックを有効にする",
+        "safeToolName": {
+          "label": "安全チェックツール"
+        },
+        "safeKeyWords": {
+          "label": "キーワードリスト",
+          "placeholder": "1行ずつ入力してください"
+        },
+        "save": "設定を保存する"
+      },
+      "claudeSettings": {
+        "budgetTokensPercentage": {
+          "label": "デフォルトの考慮トークンパーセンテージ",
+          "placeholder": "デフォルトの考慮トークンパーセンテージを入力してください"
+        },
+        "defaultMaxTokens": {
+          "label": "MaxTokenのデフォルト数量",
+          "placeholder": "デフォルトのMaxToken数を入力してください。JSON形式で、defaultはデフォルト値を表します。例：{\"default\": 1000, \"claude-3-7-sonnet-latest\": 128000}"
+        },
+        "save": "クロードの設定を保存します",
+        "title": "クロードの設定"
       }
     },
     "otherSettings": {
@@ -860,7 +1168,8 @@
     "taskIdPlaceholder": "タスクID",
     "tokenName": "トークン名",
     "type": "タイプ",
-    "username": "ユーザー名"
+    "username": "ユーザー名",
+    "sourceIp": "Source IP"
   },
   "task": "非同期タスク",
   "taskPage": {
@@ -874,7 +1183,8 @@
     "task": "タスクID",
     "time": "時間がかかる",
     "type": "タイプ",
-    "user": "ユーザー"
+    "user": "ユーザー",
+    "title": "非同期タスク"
   },
   "telegramPage": {
     "action": "アクション",
@@ -935,9 +1245,42 @@
     "unlimited": "制限なし",
     "unlimitedQuota": "無制限のクォータ",
     "usedQuota": "使用済みクォータ",
+    "selectGroup": "グループを選択",
+    "selectGroupInfo": "使用したいチャネルグループを選択してください。チャネルグループが利用できない場合はバックアップチャネルが使用されます",
     "userGroup": "グループ",
+    "userBackupGroup": "バックアップグループ",
     "apiRate": "",
-    "apiRateTip": ""
+    "apiRateTip": "",
+    "heartbeat": "心拍設定（実験的）",
+    "heartbeatTip": "心拍設定とは、リクエスト時に長時間データが返ってこない場合、クライアントがタイムアウト機構によって接続を切断する可能性があることを指します。TCP接続がタイムアウトによって中断されないようにするため、心拍設定を有効にすることができます。設定した開始時間を超えて応答がない場合、5秒ごとにハートビートリクエスト（ストリームでないリクエストは空行、ストリームの場合は::PING）を送信し、接続を維持します。ご注意：中継プログラムを使用している場合は、この設定を有効にしないでください。予期しない問題が発生する可能性があります。",
+    "heartbeatTimeout": "ハートビート開始時間(単位：秒)",
+    "heartbeatTimeoutHelperText": "最小値は30秒、最大値は90秒です",
+    "limits": "制限",
+    "limits_info": "設定後、トークンに制限をかけることができます",
+    "limits_models_switch": "モデル制限を有効にする",
+    "limit_models": "モデルの制限",
+    "limit_models_info": "このトークンが使用できるモデルを選択します。選択しない場合は、すべてのモデルが許可されます",
+    "limits_ip_whitelist": "IPホワイトリスト",
+    "limits_ip_whitelist_info": "トークンアクセスを特定のIPアドレスまたは範囲に制限します",
+    "limits_ip_whitelist_switch": "IPホワイトリストを有効にする",
+    "limits_ip_whitelist_input": "IPアドレス",
+    "limits_ip_whitelist_helper": "1行に1つのIPアドレスまたはCIDR範囲を入力してください（例：192.168.1.1または10.0.0.0/8）",
+    "billingTag": "課金タグ",
+    "billingTagInfo": "グループ別の課金統計に使用します。管理者のみ設定可能",
+    "billingTagLabel": "課金タグ",
+    "billingTagHelper": "このトークンのコストをグループ別に追跡するための課金タグとしてグループを選択してください",
+    "adminSearch": "管理者検索",
+    "adminSearchDesc": "ユーザーIDまたはトークンIDですべてのユーザーのトークンを検索",
+    "userId": "ユーザーID",
+    "userIdPlaceholder": "ユーザーIDを入力",
+    "tokenId": "トークンID",
+    "tokenIdPlaceholder": "トークンIDを入力",
+    "clearSearch": "クリア",
+    "owner": "所有者",
+    "adminEditWarning": "管理者としてこのトークンを編集しています。トークンの所有者を変更できます",
+    "transferToUser": "所有者ユーザーID",
+    "transferToUserHelper": "ユーザーIDを変更してトークンの所有権を転送します",
+    "accessedTime": "最終使用"
   },
   "topup": "トップアップ",
   "topupCard": {
@@ -983,6 +1326,12 @@
     "name": "名前",
     "nameTip": "ユーザーに表示する名前",
     "public": "公開されていますか？",
+    "promotion": "自動アップグレード",
+    "promotionTip": "有効にすると、ユーザーのチャージ金額が最小-最大条件を満たした場合、自動的にこのユーザーグループにアップグレードされます",
+    "min": "最小金額",
+    "minTip": "自動アップグレードに必要な最小チャージ金額",
+    "max": "最大金額",
+    "maxTip": "このユーザーグループレベルの最大チャージ金額",
     "ratio": "倍率 -> 倍率",
     "symbol": "識別",
     "symbolTip": "ユーザーグループを区別するための識別子を使用してください。英語で入力し、重複しないようにしてください。",
@@ -993,10 +1342,14 @@
     "adminUserRole": "管理者",
     "bind": "バインド",
     "cUserRole": "一般ユーザー",
+    "reliableUserRole": "信頼できる内部スタッフ",
+    "setReliable": "信頼できるスタッフに設定",
     "cancel": "キャンセル",
     "cancelAdmin": "管理者のキャンセル",
     "createUser": "ユーザーを作成",
     "creationTime": "作成時間",
+    "lastLoginTime": "最終ログイン時間",
+    "lastLoginIP": "最終ログインIP",
     "del": "ユーザーを削除する",
     "delTip": "ユーザーを削除するかどうか",
     "displayName": "表示名",
@@ -1012,6 +1365,7 @@
     "refresh": "リフレッシュ",
     "saveSuccess": "保存しました！",
     "searchPlaceholder": "ユーザーのID、ユーザー名、グループ、表示名、またはメールアドレスを検索...",
+    "setCommonUser": "一般ユーザーに設定",
     "setAdmin": "管理者として設定する",
     "statistics": "統計情報",
     "status": "状態",
@@ -1049,7 +1403,6 @@
   "使用代码执行功能，开启后，计算tokens不准确，建议个人使用开启": "コード実行機能を使用する場合、オンにするとトークンの計算が不正確になるため、個人で使用することを推奨します。",
   "使用网页搜索功能，对用户输入的内容进行搜索": "Web検索機能を使用して、ユーザーが入力したコンテンツを検索します。",
   "其他参数": "その他のパラメータ",
-  "单独设置代理地址，支持http和socks5，例如：http://127.0.0.1:1080": "プロキシ アドレスを個別に設定し、http と Socks5 をサポートします。例: http://127.0.0.1:1080",
   "可空，请输入中转API地址，例如通过cloudflare中转": "空のままにすることもできます。たとえば、cloudflare 転送を通じて転送 API アドレスを入力してください。",
   "启用": "有効にする",
   "地址填写Suno-API部署的地址": "アドレス: Suno-API デプロイメントのアドレスを入力します。",
@@ -1080,7 +1433,6 @@
   "模型名称为coze-{bot_id}，你也可以直接使用 coze-* 通配符来匹配所有coze开头的模型": "モデル名は coze-{bot_id} です。coze-* ワイルドカードを直接使用して、coze で始まるすべてのモデルと一致させることもできます。",
   "模型名称映射， 你可以取一个容易记忆的名字来代替coze-{bot_id}，例如：{\"coze-translate\": \"coze-xxxxx\"},注意：如果使用了模型映射，那么上面的模型名称必须使用映射前的名称，上述例子中，你应该在模型中填入coze-translate(如果已经使用了coze-*，可以忽略)。": "モデル名のマッピングでは、coze-{bot_id} を覚えやすい名前に置き換えることができます (例: {\"coze-translate\": \"coze-xxxxx\"})。 注: モデル マッピングが使用されている場合は、上記のモデル名が使用されます。上記の例では、モデルに coze-translate を入力する必要があります (coze-* がすでに使用されている場合は無視できます)。",
   "模型映射关系": "モデルマッピング関係",
-  "模型映射关系：例如用户请求A模型，实际转发给渠道的模型为B。": "モデルマッピング関係：例えば、ユーザーがモデルAを要求した場合、実際にはチャネルに転送されるモデルはBです。",
   "测速模型": "スピードモデル",
   "渠道API地址": "チャネルAPIアドレス",
   "渠道名称": "チャンネル名",
@@ -1130,5 +1482,65 @@
     "nameTip": "チャネル名",
     "title": "モデルの帰属"
   },
-  "price": "価格"
+  "price": "価格",
+  "模型映射关系：例如用户请求A模型，实际转发给渠道的模型为B。在B模型加前缀+，表示使用传入模型计费，例如：+gpt-3": {
+    "5-turbo": "モデルマッピング関係：例えば、ユーザーがAモデルをリクエストした場合、実際にチャンネルに転送されるのはBモデルです。 Bモデルにプレフィックス+を付けて、入力されたモデルを使用して課金することを示します。 例：+gpt-3.5-turbo"
+  },
+  "单独设置代理地址，支持http和socks5，例如：http://127[0][0]": {
+    "1:1080,代理地址中可以通过 `%s` 作为会话标识占位符，程序中检测到有占位符会根据Key生成唯一会话标识符进行替换": "単独のプロキシアドレスを設定し、httpおよびsocks5をサポートします。例：http://127.0.0.1:1080。プロキシアドレスには`％s`をセッション識別子のプレースホルダとして使用できます。プログラムがプレースホルダを検出すると、Keyに基づいて一意のセッション識別子を生成して置換します。"
+  },
+  "请输入版本号，例如：v3": {
+    "__i18n_ally_root__": {
+      "1": ""
+    }
+  },
+  "请选择该渠道所支持的模型,你也可以输入通配符*来匹配模型，例如：gpt-3": {
+    "__i18n_ally_root__": {
+      "5*，表示支持所有gpt-3": {
+        "5开头的模型，*号只能在最后一位使用，前面必须有字符，例如：gpt-3": {
+          "5*是正确的，*gpt-3": {
+            "5是错误的": ""
+          }
+        }
+      },
+      "__i18n_ally_root__": {
+        "5*，表示支持所有gpt-3": {
+          "5开头的模型，*号只能在最后一位使用，前面必须有字符，例如：gpt-3": {
+            "5*是正确的，*gpt-3": {
+              "5是错误的": ""
+            }
+          }
+        }
+      }
+    }
+  },
+  "输入后，会替换请求地址中的v1，例如：freeapi，则请求chat时会变成https://xxx": {
+    "__i18n_ally_root__": {
+      "__i18n_ally_root__": {
+        "com/freeapi/chat/completions,如果需要禁用版本号，请输入 disable": ""
+      },
+      "com/freeapi/chat/completions,如果需要禁用版本号，请输入 disable": ""
+    }
+  },
+  "用于测试使用的模型，为空时无法测速,如：gpt-3": {
+    "__i18n_ally_root__": {
+      "5-turbo，仅支持chat模型": ""
+    }
+  },
+  "禁用流式的模型": "フロー型モデルを無効にする",
+  "请参考wiki中的文档获取key": {
+    "__i18n_ally_root__": {
+      " https://github": {
+        "com/MartialBE/one-hub/wiki/VertexAI": ""
+      }
+    }
+  },
+  "请输入你部署的Ollama地址，例如：http://127[__i18n_ally_root__]": {
+    "0": {
+      "0": {
+        "1:11434，如果你使用了cloudflare Zero Trust，可以在下方插件填入授权信息": ""
+      }
+    }
+  },
+  "这里填写禁用流式的模型，注意：如果填写了禁用流式的模型，那么这些模型在流式请求时会跳过该渠道": "ここには、ストリーミングを無効にするモデルを記入してください。注意：ストリーミングを無効にするモデルを記入した場合、これらのモデルはストリームリクエスト時にそのチャンネルをスキップします。"
 }

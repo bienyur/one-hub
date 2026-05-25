@@ -1,25 +1,26 @@
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 
 // material-ui
-import { useTheme } from '@mui/material/styles';
-import { Collapse, List, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material';
+import { useTheme, alpha } from '@mui/material/styles';
+import { Box, ButtonBase, Collapse, Tooltip, Typography } from '@mui/material';
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 
 // project imports
 import NavItem from '../NavItem';
 
-// assets
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
+const BULLET_SIZE = 14;
+const BULLET_COLOR_LIGHT = '#EDEFF2';
+const BULLET_COLOR_DARK = '#282F37';
 
 // ==============================|| SIDEBAR MENU LIST COLLAPSE ITEMS ||============================== //
 
-const NavCollapse = ({ menu, level }) => {
+const NavCollapse = ({ menu, level, isMini = false }) => {
   const theme = useTheme();
   const customization = useSelector((state) => state.customization);
-  const navigate = useNavigate();
+  const isDark = theme.palette.mode === 'dark';
 
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -27,9 +28,6 @@ const NavCollapse = ({ menu, level }) => {
   const handleClick = () => {
     setOpen(!open);
     setSelected(!selected ? menu.id : null);
-    if (menu?.id !== 'authentication') {
-      navigate(menu.children[0]?.url);
-    }
   };
 
   const { pathname } = useLocation();
@@ -42,7 +40,6 @@ const NavCollapse = ({ menu, level }) => {
     });
   };
 
-  // menu collapse for sub-levels
   useEffect(() => {
     setOpen(false);
     setSelected(null);
@@ -57,11 +54,9 @@ const NavCollapse = ({ menu, level }) => {
         }
       });
     }
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, menu.children]);
 
-  // menu collapse & item
   const menus = menu.children?.map((item) => {
     switch (item.type) {
       case 'collapse':
@@ -77,74 +72,194 @@ const NavCollapse = ({ menu, level }) => {
     }
   });
 
-  const Icon = menu.icon;
-  const menuIcon = menu.icon ? (
-    <Icon strokeWidth={1.5} size="1.3rem" style={{ marginTop: 'auto', marginBottom: 'auto' }} />
-  ) : (
-    <FiberManualRecordIcon
-      sx={{
-        width: selected === menu.id ? 8 : 6,
-        height: selected === menu.id ? 8 : 6
-      }}
-      fontSize={level > 0 ? 'inherit' : 'medium'}
-    />
-  );
+  const isRootItem = level === 1;
+  const isOpen = open && !selected;
+  const isActive = !!selected;
+
+  const IconComponent = menu.icon;
+  const menuIcon = menu.icon ? <IconComponent strokeWidth={1.5} size={isMini ? '1.375rem' : '1.25rem'} /> : null;
+
+  if (isMini) {
+    return (
+      <Tooltip title={menu.title} placement="right" arrow>
+        <ButtonBase
+          onClick={handleClick}
+          sx={{
+            width: '100%',
+            borderRadius: `${customization.borderRadius}px`,
+            minHeight: '56px',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            textAlign: 'center',
+            px: 0.5,
+            py: 0.75,
+            color: theme.palette.text.secondary,
+            transition: theme.transitions.create(['background-color', 'color'], {
+              duration: theme.transitions.duration.shortest
+            }),
+            '&:hover': {
+              backgroundColor: theme.palette.action.hover
+            },
+            ...(isActive && {
+              color: theme.palette.primary.main,
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.16)
+              }
+            }),
+            ...(isOpen && {
+              color: theme.palette.text.primary,
+              backgroundColor: theme.palette.action.hover
+            })
+          }}
+        >
+          {menuIcon && (
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                width: '22px',
+                height: '22px',
+                mb: 0.5,
+                '& > svg': { width: '100%', height: '100%' }
+              }}
+            >
+              {menuIcon}
+            </Box>
+          )}
+          <Typography
+            variant="caption"
+            sx={{
+              maxWidth: '100%',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+              lineHeight: '16px',
+              fontSize: '0.625rem',
+              fontWeight: isActive ? 700 : 600,
+              color: 'inherit'
+            }}
+          >
+            {menu.title}
+          </Typography>
+        </ButtonBase>
+      </Tooltip>
+    );
+  }
 
   return (
     <>
-      <ListItemButton
-        sx={{
-          borderRadius: `${customization.borderRadius}px`,
-          mb: 0.5,
-          alignItems: 'flex-start',
-          backgroundColor: level > 1 ? 'transparent !important' : 'inherit',
-          py: level > 1 ? 1 : 1.25,
-          pl: `${level * 24}px`
-        }}
-        selected={selected === menu.id}
+      <ButtonBase
         onClick={handleClick}
-      >
-        <ListItemIcon sx={{ my: 'auto', minWidth: !menu.icon ? 18 : 36 }}>{menuIcon}</ListItemIcon>
-        <ListItemText
-          primary={
-            <Typography variant={selected === menu.id ? 'h5' : 'body1'} color="inherit" sx={{ my: 'auto' }}>
-              {menu.title}
-            </Typography>
-          }
-          secondary={
-            menu.caption && (
-              <Typography variant="caption" sx={{ ...theme.typography.subMenuCaption }} display="block" gutterBottom>
-                {menu.caption}
-              </Typography>
-            )
-          }
-        />
-        {open ? (
-          <IconChevronUp stroke={1.5} size="1rem" style={{ marginTop: 'auto', marginBottom: 'auto' }} />
-        ) : (
-          <IconChevronDown stroke={1.5} size="1rem" style={{ marginTop: 'auto', marginBottom: 'auto' }} />
-        )}
-      </ListItemButton>
-      <Collapse in={open} timeout="auto" unmountOnExit>
-        <List
-          component="div"
-          disablePadding
-          sx={{
-            position: 'relative',
-            '&:after': {
-              content: "''",
-              position: 'absolute',
-              left: '32px',
-              top: 0,
-              height: '100%',
-              width: '1px',
-              opacity: 1,
-              background: theme.palette.primary.light
+        sx={{
+          width: '100%',
+          borderRadius: `${customization.borderRadius}px`,
+          minHeight: isRootItem ? '44px' : '36px',
+          py: 0.5,
+          pl: isRootItem ? 1.5 : `${level * 20}px`,
+          pr: 1,
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          textAlign: 'left',
+          color: theme.palette.text.secondary,
+          transition: theme.transitions.create(['background-color', 'color'], {
+            duration: theme.transitions.duration.shortest
+          }),
+          '&:hover': {
+            backgroundColor: theme.palette.action.hover
+          },
+          ...(isActive && {
+            color: theme.palette.primary.main,
+            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+            '&:hover': {
+              backgroundColor: alpha(theme.palette.primary.main, 0.16)
             }
+          }),
+          ...(isOpen && {
+            color: theme.palette.text.primary,
+            backgroundColor: theme.palette.action.hover
+          })
+        }}
+      >
+        {menuIcon && (
+          <Box
+            component="span"
+            sx={{
+              flexShrink: 0,
+              display: 'inline-flex',
+              width: '24px',
+              height: '24px',
+              mr: 1.5,
+              '& > svg': { width: '100%', height: '100%' }
+            }}
+          >
+            {menuIcon}
+          </Box>
+        )}
+
+        <Box component="span" sx={{ flex: '1 1 auto', minWidth: 0 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+              fontWeight: isActive ? 600 : 500,
+              color: 'inherit'
+            }}
+          >
+            {menu.title}
+          </Typography>
+        </Box>
+
+        <Box
+          component="span"
+          sx={{
+            width: 16,
+            height: 16,
+            flexShrink: 0,
+            ml: 0.75,
+            display: 'inline-flex',
+            color: 'inherit'
+          }}
+        >
+          {open ? <IconChevronDown size={16} stroke={1.5} /> : <IconChevronRight size={16} stroke={1.5} />}
+        </Box>
+      </ButtonBase>
+
+      <Collapse
+        in={open}
+        timeout="auto"
+        unmountOnExit
+        sx={{
+          pl: `calc(${isRootItem ? '12px' : `${level * 20}px`} + 12px)`,
+          '& > .nav-collapse-list': {
+            position: 'relative',
+            pl: `${BULLET_SIZE}px`,
+            '&::before': {
+              top: 0,
+              left: 0,
+              width: '2px',
+              content: '""',
+              position: 'absolute',
+              bottom: `calc(36px - 2px - ${BULLET_SIZE / 2}px)`,
+              bgcolor: isDark ? BULLET_COLOR_DARK : BULLET_COLOR_LIGHT
+            }
+          }
+        }}
+      >
+        <Box
+          className="nav-collapse-list"
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            pt: '4px'
           }}
         >
           {menus}
-        </List>
+        </Box>
       </Collapse>
     </>
   );
@@ -152,7 +267,8 @@ const NavCollapse = ({ menu, level }) => {
 
 NavCollapse.propTypes = {
   menu: PropTypes.object,
-  level: PropTypes.number
+  level: PropTypes.number,
+  isMini: PropTypes.bool
 };
 
 export default NavCollapse;
